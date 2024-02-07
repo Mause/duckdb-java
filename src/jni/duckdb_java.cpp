@@ -12,6 +12,7 @@
 #include "duckdb/main/db_instance_cache.hpp"
 #include "duckdb/main/extension_util.hpp"
 #include "duckdb/parser/parsed_data/create_type_info.hpp"
+#include <jnipp.h>
 
 
 using namespace duckdb;
@@ -117,6 +118,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 	if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION) != JNI_OK) {
 		return JNI_ERR;
 	}
+
+	jni::init(vm);
 
 	jclass tmpLocalRef;
 
