@@ -23,13 +23,18 @@ public class Whatt {
         DuckDB duckdb = new DuckDB();
 //        duckdb.instance();
         Connection conn = new Connection(duckdb);
-        MaterializedQueryResult queryResult = conn.Query("select version()");
+        MaterializedQueryResult queryResult = conn.Query("select version(), 42");
         System.out.println(queryResult);
 
         int row_idx = 0;
         for (int col_idx = 0; col_idx < queryResult.ColumnCount(); col_idx++) {
             System.out.println(queryResult.ColumnName(col_idx));
-            System.out.println(queryResult.GetValue(row_idx, col_idx));
+            if (col_idx == 0) {
+                System.out.println("version: " + queryResult.GetValue(col_idx, row_idx).toString());
+            } else {
+                DuckDBLibrary.HugeInt hugeInt = queryResult.GetValue(col_idx, row_idx).asHugeInt();
+                System.out.println("42: " + hugeInt.upper() + " " + hugeInt.lower());
+            }
         }
     }
 }
