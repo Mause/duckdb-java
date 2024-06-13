@@ -12,11 +12,14 @@ env:
 jobs:
   java-linux-amd64:
     name: Java Linux (amd64)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     container:
       image: quay.io/pypa/manylinux2014_x86_64
     env:
       GEN: ninja
+    strategy:
+      matrix:
+        os: [ubuntu-latest, alpine-latest]
     steps:
       - uses: actions/checkout@v3
         with:
