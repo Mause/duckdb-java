@@ -4,18 +4,23 @@ import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.ByRef;
 import org.bytedeco.javacpp.annotation.ByVal;
+import org.bytedeco.javacpp.annotation.Const;
+import org.bytedeco.javacpp.annotation.MemberGetter;
 import org.bytedeco.javacpp.annotation.Name;
 import org.bytedeco.javacpp.annotation.Namespace;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.StdString;
 import org.bytedeco.javacpp.annotation.UniquePtr;
-import org.bytedeco.javacpp.annotation.MemberGetter;
 import org.bytedeco.javacpp.tools.Info;
 import org.bytedeco.javacpp.tools.InfoMap;
 import org.bytedeco.javacpp.tools.InfoMapper;
 
 @Platform(
-        include = "duckdb.hpp",
+        include = {
+                "duckdb.hpp",
+                "duckdb/main/database.hpp",
+                "duckdb/main/config.hpp"
+        },
         includepath = "/home/me/duckdb/src/include",
         link = "duckdb",
         compiler = "cpp11",
@@ -195,5 +200,32 @@ public class DuckDBLibrary implements InfoMapper {
 
         @UniquePtr
         public native MaterializedQueryResult Query(String query);
+    }
+
+    public static class Vector extends Pointer {
+    }
+
+    @Name("vector<duckdb::Value>")
+    public static class ValueVector extends Pointer {
+        @ByVal
+        public native Value get(int idx);
+    }
+
+    @Name("vector<std::pair<std::string, duckdb::LogicalType>>")
+    public static class PairVector extends Pointer {
+        @ByVal
+        public native Std.Pair get(int idx);
+    }
+
+    public static class StructValue extends Pointer {
+        @ByVal
+        public static native ValueVector GetChildren(@ByVal Value value);
+    }
+
+    public static class StructType extends Pointer {
+        public static native int GetChildCount(@ByRef LogicalType type);
+
+        @ByVal
+        public static native PairVector GetChildTypes(@ByRef LogicalType type);
     }
 }
