@@ -355,15 +355,15 @@ public class DuckDBLibrary implements InfoMapper {
         public native @StdString String ColumnName(int index);
     }
 
-    @Name("vector<duckdb::unique_ptr<duckdb::Vector>>")
-    public static class VectorUniquePtrVector extends Pointer {
-//        @UniquePtr
-//        @StdMove
-//        public native Vector get(int index);
-    }
+//    @Name("vector<duckdb::unique_ptr<duckdb::Vector>>")
+//    public static class VectorUniquePtrVector extends Pointer {
+////        @UniquePtr
+////        @StdMove
+////        public native Vector get(int index);
+//    }
 
     public static class StructVector extends Pointer {
-        @ByVal
-        public static native VectorUniquePtrVector GetEntries(@ByRef Vector vector);
+//        @ByVal
+//        public static native VectorUniquePtrVector GetEntries(@ByRef Vector vector);
     }
 }

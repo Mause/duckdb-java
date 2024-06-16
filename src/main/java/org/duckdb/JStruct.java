@@ -20,7 +20,7 @@ public class JStruct implements Struct {
 
     @Override
     public Object[] getAttributes() throws SQLException {
-        DuckDBLibrary.StructVector.GetEntries(this.datum);
+//        DuckDBLibrary.StructVector.GetEntries(this.datum);
         return new Object[0];
     }
 
