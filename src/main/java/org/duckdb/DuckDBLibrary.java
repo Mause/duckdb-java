@@ -4,16 +4,21 @@ import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.annotation.ByRef;
 import org.bytedeco.javacpp.annotation.ByVal;
+import org.bytedeco.javacpp.annotation.Cast;
 import org.bytedeco.javacpp.annotation.Const;
 import org.bytedeco.javacpp.annotation.MemberGetter;
 import org.bytedeco.javacpp.annotation.Name;
 import org.bytedeco.javacpp.annotation.Namespace;
+import org.bytedeco.javacpp.annotation.Opaque;
 import org.bytedeco.javacpp.annotation.Platform;
+import org.bytedeco.javacpp.annotation.StdMove;
 import org.bytedeco.javacpp.annotation.StdString;
 import org.bytedeco.javacpp.annotation.UniquePtr;
 import org.bytedeco.javacpp.tools.Info;
 import org.bytedeco.javacpp.tools.InfoMap;
 import org.bytedeco.javacpp.tools.InfoMapper;
+
+import java.nio.ByteBuffer;
 
 @Platform(
         include = {
@@ -47,20 +52,35 @@ public class DuckDBLibrary implements InfoMapper {
         private native void allocate();
     }
 
-    public static class MaterializedQueryResult extends Pointer {
+    public static class MaterializedQueryResult extends QueryResult {
         static {
             Loader.load();
         }
-
-        public native int ColumnCount();
-
-        public native @StdString String ColumnName(int index);
 
         @ByVal
         public native Value GetValue(int row_idx, int col_idx);
     }
 
     public enum LogicalTypeId {
+        INVALID(0);
+
+        public int value;
+
+        LogicalTypeId(int value) {
+            this.value = value;
+        }
+
+        public LogicalTypeIdActual valueOf() {
+            for (var variant : LogicalTypeIdActual.values()) {
+                if (variant.value == this.value) {
+                    return variant;
+                }
+            }
+            throw new IllegalStateException();
+        }
+    }
+
+    public enum LogicalTypeIdActual {
         INVALID(0),
         SQLNULL(1), /* NULL type, used for constant NULL */
         UNKNOWN(2), /* unknown type, used for parameter expressions */
@@ -112,22 +132,8 @@ public class DuckDBLibrary implements InfoMapper {
 
         public final int value;
 
-        private LogicalTypeId(int v) {
+        LogicalTypeIdActual(int v) {
             this.value = v;
-        }
-
-        private LogicalTypeId(LogicalTypeId e) {
-            this.value = e.value;
-        }
-
-        public LogicalTypeId intern() {
-            for (LogicalTypeId e : values()) if (e.value == value) return e;
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            return intern().name();
         }
     }
 
@@ -159,20 +165,27 @@ public class DuckDBLibrary implements InfoMapper {
         public native HugeInt asHugeInt();
 
         @Name("GetValue<int64_t>")
-        public native int asInt64();
+        public native long asInt64();
 
         @Name("GetValue<int32_t>")
         public native int asInt32();
 
         @Name("GetValue<int16_t>")
-        public native int asInt16();
+        public native short asInt16();
 
         @Name("GetValue<int8_t>")
-        public native int asInt8();
+        public native byte asInt8();
+
+        @Name("GetValue<bool>")
+        public native boolean asBoolean();
 
         @Const
         @ByVal
         public native LogicalType type();
+
+        @Name("GetValue<duckdb::uhugeint_t>")
+        @ByVal
+        public native HugeInt asUHugeInt();
     }
 
     public static class DatabaseInstance extends Pointer {
@@ -200,9 +213,50 @@ public class DuckDBLibrary implements InfoMapper {
 
         @UniquePtr
         public native MaterializedQueryResult Query(String query);
+
+        @UniquePtr
+        public native PreparedStatement Prepare(String sql);
+    }
+
+    public static class PreparedStatement extends Pointer {
+        @UniquePtr
+        public native QueryResult Execute();
     }
 
     public static class Vector extends Pointer {
+        @StdString
+        @Name("ToString")
+        @Override
+        public native String toString();
+        @ByVal
+        public native LogicalType GetType();
+
+        public native VectorType GetVectorType();
+
+        @Cast("signed char*")
+        public native ByteBuffer /*data_ptr_t*/ GetData();
+    }
+
+    public enum VectorTypeWrapper {
+        FLAT(0),
+        ROUND(0);
+        private final int value;
+        VectorTypeWrapper(int value) {
+            this.value = value;
+        }
+    }
+
+    public enum VectorType {
+        INVALID;
+        public int value;
+        public VectorTypeWrapper resolve() {
+            for (var variant : VectorTypeWrapper.values()) {
+                if (variant.value == value) {
+                    return variant;
+                }
+            }
+            throw new IllegalArgumentException();
+        }
     }
 
     @Name("vector<duckdb::Value>")
@@ -227,5 +281,89 @@ public class DuckDBLibrary implements InfoMapper {
 
         @ByVal
         public static native PairVector GetChildTypes(@ByRef LogicalType type);
+    }
+
+    @Opaque
+    public static class DataChunk extends Pointer {
+        public native int ColumnCount();
+
+        @ByVal
+        public native Value GetValue(int columnIndex, int rowIdx);
+
+        @MemberGetter
+        @ByVal
+        @StdMove
+        public native VectorVector data();
+    }
+
+    @Name("vector<duckdb::Vector>")
+    public static class VectorVector extends Pointer {
+        @ByVal
+        public native Vector get(int idx);
+    }
+
+    @Name("vector<duckdb::LogicalType>")
+    public static class LogicalTypeVector extends Pointer {
+        @ByVal
+        public native LogicalType get(int i);
+    }
+
+    public static class BaseQueryResult extends Pointer {
+        public native int ColumnCount();
+
+        @MemberGetter
+        @ByVal
+        public native LogicalTypeVector types();
+
+//        //! The type of the result (MATERIALIZED or STREAMING)
+//        QueryResultType type;
+//        //! The type of the statement that created this result
+//        StatementType statement_type;
+//        //! Properties of the statement
+//        StatementProperties properties;
+//        //! The SQL types of the result
+//        vector<LogicalType> types;
+//        //! The names of the result
+//        vector<string> names;
+//
+//        public:
+//                [[noreturn]] DUCKDB_API void ThrowError(const string &prepended_message = "") const;
+//        DUCKDB_API void SetError(ErrorData error);
+//        DUCKDB_API bool HasError() const;
+//        DUCKDB_API const ExceptionType &GetErrorType() const;
+//        DUCKDB_API const std::string &GetError();
+//        DUCKDB_API ErrorData &GetErrorObject();
+//        DUCKDB_API idx_t ColumnCount();
+//
+//        protected:
+//        //! Whether or not execution was successful
+//        bool success;
+//        //! The error (in case execution was not successful)
+//        ErrorData error;
+
+    }
+
+    public static class QueryResult extends BaseQueryResult {
+//        @Name("Cast<duckdb::MaterializedQueryResult>")
+//        @ByVal
+//        public native MaterializedQueryResult asMaterialized();
+
+        @ByVal
+        @UniquePtr
+        public native DataChunk Fetch();
+
+        public native @StdString String ColumnName(int index);
+    }
+
+    @Name("vector<duckdb::unique_ptr<duckdb::Vector>>")
+    public static class VectorUniquePtrVector extends Pointer {
+//        @UniquePtr
+//        @StdMove
+//        public native Vector get(int index);
+    }
+
+    public static class StructVector extends Pointer {
+        @ByVal
+        public static native VectorUniquePtrVector GetEntries(@ByRef Vector vector);
     }
 }
