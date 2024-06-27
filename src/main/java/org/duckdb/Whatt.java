@@ -4,11 +4,6 @@ import org.bytedeco.javacpp.tools.Builder;
 import org.duckdb.DuckDBLibrary.DuckDB;
 import org.duckdb.DuckDBLibrary.LogicalType;
 
-import java.sql.*;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Executor;
-
 import static org.duckdb.DuckDBLibrary.Connection;
 import static org.duckdb.DuckDBLibrary.HugeInt;
 import static org.duckdb.DuckDBLibrary.MaterializedQueryResult;
@@ -21,8 +16,11 @@ import static org.duckdb.DuckDBLibrary.ValueVector;
 public class Whatt {
     public static void main(String[] args) throws Exception {
         new Builder()
+//                .outputDirectory("target/generated-sources/annotations")
                 .classesOrPackages(DuckDBLibrary.class.getName(), Std.class.getName())
                 .header(true)
+                .deleteJniFiles(false)
+//                .generate(true)
                 .build();
 
         try (var c = new JConnection()) {
@@ -37,8 +35,12 @@ public class Whatt {
 
                     JStruct value1 = (JStruct) value;
                     System.out.println(value1.getSQLTypeName());
-                    System.out.println(value1.datum.GetVectorType());
-                    System.out.println(value1.datum.GetData());
+                    DuckDBLibrary.Vector datum = value1.datum;
+                    System.out.println(datum.GetVectorType());
+                    System.out.println(datum.GetValue(0));
+                    DuckDBLibrary.StructVector.GetEntries(datum);
+//                    System.out.println(DuckDBLibrary.FlatVector datum.GetData().getPointer());
+                    System.out.println(DuckDBLibrary.FlatVector.GetData(datum));
                 }
             }
         }
@@ -54,7 +56,7 @@ public class Whatt {
             String columnName = queryResult.ColumnName(col_idx);
             Value value = queryResult.GetValue(col_idx, row_idx);
             LogicalType type = value.type();
-            var typeId = type.id().valueOf();
+            var typeId = type.id().resolve();
 
             switch (typeId) {
                 case HUGEINT:

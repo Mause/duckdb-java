@@ -232,7 +232,7 @@ public class JResultSet implements ResultSet {
 
     @Override
     public Object getObject(int columnIndex) throws SQLException {
-        DuckDBLibrary.LogicalTypeIdActual value = execute.types().get(columnIndex - 1).id().valueOf();
+        DuckDBLibrary.LogicalTypeIdActual value = execute.types().get(columnIndex - 1).id().resolve();
         switch (value) {
 //            case INVALID:
 //                break;
@@ -305,7 +305,8 @@ public class JResultSet implements ResultSet {
             case UUID:
                 break;
             case STRUCT:
-                return new JStruct(chunk.data().get(columnIndex-1));
+                var pointer = chunk.data().get(columnIndex - 1);
+                return new JStruct(pointer);
             case LIST:
                 break;
             case MAP:

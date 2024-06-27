@@ -2,6 +2,7 @@ package org.duckdb;
 
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.annotation.ByRef;
 import org.bytedeco.javacpp.annotation.ByVal;
 import org.bytedeco.javacpp.annotation.Cast;
@@ -18,8 +19,8 @@ import org.bytedeco.javacpp.tools.Info;
 import org.bytedeco.javacpp.tools.InfoMap;
 import org.bytedeco.javacpp.tools.InfoMapper;
 
-import java.nio.ByteBuffer;
-
+//@Properties(
+//        value =
 @Platform(
         include = {
                 "duckdb.hpp",
@@ -31,13 +32,33 @@ import java.nio.ByteBuffer;
         compiler = "cpp11",
         define = {"SHARED_PTR_NAMESPACE std", "UNIQUE_PTR_NAMESPACE std"}
 )
+//,
+//        target = "org.duckdb.DuckDBLibraryExtension"
+//)
 @Namespace("duckdb")
 public class DuckDBLibrary implements InfoMapper {
     @Override
     public void map(InfoMap infoMap) {
         infoMap.put(
-                new Info("duckdb::MaterializedQueryResult::GetValue<int>").define(true)
-        );
+                        new Info("duckdb::MaterializedQueryResult::GetValue<int>").define(true)
+                )
+                .put(
+                        new Info("DUCKDB_API").define(true).cppText("#define DUCKDB_API")
+                )
+                .put(
+                        new Info("string").define().cppText("std::string")
+                )
+                .put(
+                        new Info("enable_shared_from_this").skip()
+                )
+                .put(
+                        new Info("idx_t").define().javaText("int")
+                )
+//                .put(new Info("duckdb::vector").annotations("@StdVector"))
+        ;
+//        infoMap.put(
+//                new Info().
+//        );
     }
 
     public static class DuckDB extends Pointer {
@@ -70,7 +91,7 @@ public class DuckDBLibrary implements InfoMapper {
             this.value = value;
         }
 
-        public LogicalTypeIdActual valueOf() {
+        public LogicalTypeIdActual resolve() {
             for (var variant : LogicalTypeIdActual.values()) {
                 if (variant.value == this.value) {
                     return variant;
@@ -228,19 +249,36 @@ public class DuckDBLibrary implements InfoMapper {
         @Name("ToString")
         @Override
         public native String toString();
+
         @ByVal
         public native LogicalType GetType();
 
         public native VectorType GetVectorType();
 
+        public native void SetValue(int index, @Const @ByRef Value val);
+
+        @ByVal
+        public native Value GetValue(int idx);
+
+//        @ByVal
+//        @Cast("signed char*")
+//        public native PointerPointer GetData();
+    }
+
+    public static class FlatVector extends Pointer {
         @Cast("signed char*")
-        public native ByteBuffer /*data_ptr_t*/ GetData();
+        public static native PointerPointer<int> GetData(@ByRef Vector vector);
     }
 
     public enum VectorTypeWrapper {
-        FLAT(0),
-        ROUND(0);
+        FLAT_VECTOR(0),       // Flat vectors represent a standard uncompressed vector
+        FSST_VECTOR(1),       // Contains string data compressed with FSST
+        CONSTANT_VECTOR(2),   // Constant vector represents a single constant
+        DICTIONARY_VECTOR(3), // Dictionary vector represents a selection vector on top of another vector
+        SEQUENCE_VECTOR(4)   // Sequence vector represents a sequence with a start point and an increment
+        ;
         private final int value;
+
         VectorTypeWrapper(int value) {
             this.value = value;
         }
@@ -249,6 +287,7 @@ public class DuckDBLibrary implements InfoMapper {
     public enum VectorType {
         INVALID;
         public int value;
+
         public VectorTypeWrapper resolve() {
             for (var variant : VectorTypeWrapper.values()) {
                 if (variant.value == value) {
@@ -293,6 +332,7 @@ public class DuckDBLibrary implements InfoMapper {
         @MemberGetter
         @ByVal
         @StdMove
+//        @StdVector("duckdb::Vector")
         public native VectorVector data();
     }
 
@@ -315,7 +355,7 @@ public class DuckDBLibrary implements InfoMapper {
         @ByVal
         public native LogicalTypeVector types();
 
-//        //! The type of the result (MATERIALIZED or STREAMING)
+        //        //! The type of the result (MATERIALIZED or STREAMING)
 //        QueryResultType type;
 //        //! The type of the statement that created this result
 //        StatementType statement_type;
@@ -329,11 +369,13 @@ public class DuckDBLibrary implements InfoMapper {
 //        public:
 //                [[noreturn]] DUCKDB_API void ThrowError(const string &prepended_message = "") const;
 //        DUCKDB_API void SetError(ErrorData error);
-//        DUCKDB_API bool HasError() const;
+        public native boolean HasError();
+
+        //        DUCKDB_API bool HasError() const;
 //        DUCKDB_API const ExceptionType &GetErrorType() const;
+        public native @StdString String GetError();
 //        DUCKDB_API const std::string &GetError();
 //        DUCKDB_API ErrorData &GetErrorObject();
-//        DUCKDB_API idx_t ColumnCount();
 //
 //        protected:
 //        //! Whether or not execution was successful
@@ -355,15 +397,27 @@ public class DuckDBLibrary implements InfoMapper {
         public native @StdString String ColumnName(int index);
     }
 
-//    @Name("vector<duckdb::unique_ptr<duckdb::Vector>>")
-//    public static class VectorUniquePtrVector extends Pointer {
-////        @UniquePtr
-////        @StdMove
-////        public native Vector get(int index);
-//    }
+        @Name("vector<duckdb::unique_ptr<duckdb::Vector>>")
+    public static class VectorUniquePtrVector extends Pointer {
+//        @UniquePtr
+//        @StdMove
+//        public native Vector get(int index);
+    }
 
     public static class StructVector extends Pointer {
-//        @ByVal
-//        public static native VectorUniquePtrVector GetEntries(@ByRef Vector vector);
+        @ByVal
+        public static native VectorUniquePtrVector GetEntries(@ByRef Vector vector);
+    }
+
+    public static void D_ASSERT(Object aux) {
+        if (aux instanceof Boolean) {
+            if (!(boolean) aux) {
+                throw new RuntimeException();
+            }
+        } else {
+            if (aux == null) {
+                throw new RuntimeException();
+            }
+        }
     }
 }
