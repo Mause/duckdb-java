@@ -19,8 +19,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <duckdbRoot>${project.basedir}/../..</duckdbRoot>
-        <targetPath>${duckdbRoot}/build/debug</targetPath>
+        <targetPath>${project.basedir}/build/debug</targetPath>
     </properties>
 
     <build>
@@ -109,11 +108,8 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <sourcePath>${duckdbRoot}</sourcePath>
+                            <sourcePath>${project.basedir}</sourcePath>
                             <targetPath>${targetPath}</targetPath>
-                            <options>
-                                <option>-DJDBC_DRIVER=1</option>
-                            </options>
                             <generator>Ninja</generator>
                         </configuration>
                     </execution>
