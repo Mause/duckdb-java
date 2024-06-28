@@ -12,7 +12,7 @@
     <licenses>
         <license>
             <name>MIT License</name>
-            <url>https://raw.githubusercontent.com/duckdb/duckdb/main/LICENSE</url>
+            <url>https://raw.githubusercontent.com/duckdb/duckdb-java/main/LICENSE</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -147,9 +147,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/duckdb/duckdb.git</connection>
-        <developerConnection>scm:git:ssh://github.com:duckdb/duckdb.git</developerConnection>
-        <url>http://github.com/duckdb/duckdb/tree/main</url>
+        <connection>scm:git:git://github.com/duckdb/duckdb-java.git</connection>
+        <developerConnection>scm:git:ssh://github.com:duckdb/duckdb-java.git</developerConnection>
+        <url>http://github.com/duckdb/duckdb-java/tree/main</url>
     </scm>
 
     <reporting>
