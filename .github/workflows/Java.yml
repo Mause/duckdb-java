@@ -33,6 +33,7 @@ jobs:
 
       - uses: ./.github/actions/manylinux_2014_setup
         with:
+          jdk: 1
           ninja-build: 1
       - run: mvn site
 
