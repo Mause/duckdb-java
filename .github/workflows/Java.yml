@@ -36,6 +36,8 @@ jobs:
           jdk: 1
           ninja-build: 1
       - run: ./mvnw site
+        env:
+          JAVA_INCLUDE_PATH: /usr/lib/jvm/jdk-17-oracle-x64/include/
 
   java-linux-amd64:
     name: Java Linux (amd64)
