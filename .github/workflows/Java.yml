@@ -35,7 +35,7 @@ jobs:
         with:
           jdk: 1
           ninja-build: 1
-      - run: mvn site
+      - run: ./mvnw site
 
   java-linux-amd64:
     name: Java Linux (amd64)
