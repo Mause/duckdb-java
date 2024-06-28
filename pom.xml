@@ -61,7 +61,9 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <additionalparam>-Xdoclint:-reference</additionalparam>
+                    <additionalJOptions>
+                        <additionalJOption>-Xdoclint:-reference</additionalJOption>
+                    </additionalJOptions>
                 </configuration>
             </plugin>
             <plugin>
