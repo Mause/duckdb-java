@@ -12,35 +12,50 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 public class DuckDBResultSetMetaData implements ResultSetMetaData {
 
+    final DuckDBColumnTypeMetaData[] param_types_meta;
+    final DuckDBColumnType[] param_types;
+
     public DuckDBResultSetMetaData(int param_count, int column_count, String[] column_names,
-                                   String[] column_types_string, String[] column_types_details, String return_type) {
+                                   String[] column_types_string, String[] column_types_details, String return_type,
+                                   String[] param_types) {
         this.param_count = param_count;
         this.column_count = column_count;
         this.column_names = column_names;
         this.return_type = StatementReturnType.valueOf(return_type);
         this.column_types_string = column_types_string;
         this.column_types_details = column_types_details;
-        ArrayList<DuckDBColumnType> column_types_al = new ArrayList<DuckDBColumnType>(column_count);
-        ArrayList<DuckDBColumnTypeMetaData> column_types_meta = new ArrayList<DuckDBColumnTypeMetaData>(column_count);
 
-        for (String column_type_string : this.column_types_string) {
+        this.column_types = parse_types(this.column_types_string);
+        this.column_types_meta = parse_types_meta(this.column_types_details);
+
+        this.param_types = parse_types(param_types);
+        this.param_types_meta = parse_types_meta(param_types);
+    }
+
+    private DuckDBColumnType[] parse_types(String[] typesString) {
+        List<DuckDBColumnType> column_types_al = new ArrayList<>(typesString.length);
+        for (String column_type_string : typesString) {
             column_types_al.add(TypeNameToType(column_type_string));
         }
-        this.column_types = new DuckDBColumnType[column_count];
-        this.column_types = column_types_al.toArray(this.column_types);
+        return column_types_al.toArray(new DuckDBColumnType[0]);
+    }
 
-        for (String column_type_detail : this.column_types_details) {
+    private DuckDBColumnTypeMetaData[] parse_types_meta(String[] typesDetails) {
+        List<DuckDBColumnTypeMetaData> column_types_meta = new ArrayList<>(typesDetails.length);
+
+        for (String column_type_detail : typesDetails) {
             if (TypeNameToType(column_type_detail) == DuckDBColumnType.DECIMAL) {
                 column_types_meta.add(DuckDBColumnTypeMetaData.parseColumnTypeMetadata(column_type_detail));
             } else {
                 column_types_meta.add(null);
             }
         }
-        this.column_types_meta = column_types_meta.toArray(new DuckDBColumnTypeMetaData[column_count]);
+        return column_types_meta.toArray(new DuckDBColumnTypeMetaData[0]);
     }
 
     public static DuckDBColumnType TypeNameToType(String type_name) {
@@ -150,7 +165,11 @@ public class DuckDBResultSetMetaData implements ResultSetMetaData {
     }
 
     public String getColumnClassName(int column) throws SQLException {
-        switch (column_types[column - 1]) {
+        return typeToClass(column_types[column - 1]);
+    }
+
+    static String typeToClass(DuckDBColumnType columnType) {
+        switch (columnType) {
         case BOOLEAN:
             return Boolean.class.getName();
         case TINYINT:
