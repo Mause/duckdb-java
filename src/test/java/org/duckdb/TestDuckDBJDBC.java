@@ -3949,9 +3949,9 @@ public class TestDuckDBJDBC {
                 int rowIdx = 0;
                 while (rs.next()) {
                     for (int i = 0; i < metaData.getColumnCount(); i++) {
+                        String columnName = metaData.getColumnName(i + 1);
                         System.out.println(columnName);
 
-                        String columnName = metaData.getColumnName(i + 1);
                         List<Object> answers = correct_answer_map.get(columnName);
                         Object expected = answers.get(rowIdx);
 
