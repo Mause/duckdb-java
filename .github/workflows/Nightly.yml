@@ -47,4 +47,4 @@ jobs:
           COMMIT_EMAIL: "github_bot@duckdblabs.com"
           PR_BRANCH_NAME: "chore-update-vendored-duckdb-${PR_ID}"
           PR_TITLE: "Update vendored DuckDB sources"
-          GITHUB_TOKEN: ${{ secrets.GH_UPDATE_DOCS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
