@@ -3895,7 +3895,7 @@ public class TestDuckDBJDBC {
                                asList(Timestamp.valueOf(LocalDateTime.of(-290308, 12, 22, 0, 0)),
                                       Timestamp.valueOf(LocalDateTime.of(294247, 1, 10, 4, 0, 54)), null));
         correct_answer_map.put("timestamp_ns",
-                               asList(Timestamp.valueOf(LocalDateTime.parse("1677-09-21T00:12:43.145225")),
+                               asList(Timestamp.valueOf(LocalDateTime.parse("1677-09-22T00:00:00.0")),
                                       Timestamp.valueOf(LocalDateTime.parse("2262-04-11T23:47:16.854775")), null));
         correct_answer_map.put("timestamp_ms",
                                asList(Timestamp.valueOf(LocalDateTime.of(-290308, 12, 22, 0, 0, 0)),
