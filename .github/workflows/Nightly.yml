@@ -34,7 +34,7 @@ jobs:
           path: .git/duckdb
           fetch-depth: 0
 
-      - name: Update docs
+      - name: Update vendored duckdb
         uses: technote-space/create-pr-action@v2
         with:
           EXECUTE_COMMANDS: |
@@ -42,9 +42,9 @@ jobs:
             python vendor.py --duckdb .git/duckdb
             git add src/duckdb CMakeLists.txt
             rm -rf .git/duckdb
-          COMMIT_MESSAGE: "Update vendored DuckDB sources to $REV"
+          COMMIT_MESSAGE: "Update vendored DuckDB sources"
           COMMIT_NAME: "DuckDB Labs GitHub Bot"
           COMMIT_EMAIL: "github_bot@duckdblabs.com"
-          PR_BRANCH_NAME: "chore-update-docs-${PR_ID}"
-          PR_TITLE: "chore: auto update docs"
+          PR_BRANCH_NAME: "chore-update-vendored-duckdb-${PR_ID}"
+          PR_TITLE: "Update vendored DuckDB sources"
           GITHUB_TOKEN: ${{ secrets.GH_UPDATE_DOCS_TOKEN }}
