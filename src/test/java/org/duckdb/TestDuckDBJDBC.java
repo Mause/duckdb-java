@@ -3958,7 +3958,7 @@ public class TestDuckDBJDBC {
                         Object actual = toJavaObject(rs.getObject(i + 1));
 
                         if (actual instanceof Timestamp && expected instanceof Timestamp) {
-                            assertEquals(((Timestamp) actual).getTime(), ((Timestamp) expected).getTime(), 500);
+                            assertEquals(((Timestamp) actual).getTime(), ((Timestamp) expected).getTime());
                         } else if (actual instanceof List) {
                             assertListsEqual((List) actual, (List) expected);
                         } else {
