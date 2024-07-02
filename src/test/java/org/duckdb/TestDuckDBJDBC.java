@@ -346,7 +346,7 @@ public class TestDuckDBJDBC {
     }
 
     public static void test_timestamp_ns() throws Exception {
-        String expectedString = "2022-08-17 12:11:10.999999";
+        String expectedString = "2022-08-17 12:11:10.999999999";
         String sql = "SELECT '2022-08-17T12:11:10.999999999'::TIMESTAMP_NS as ts_ns";
         assert_timestamp_match(sql, expectedString, "TIMESTAMP_NS");
     }
