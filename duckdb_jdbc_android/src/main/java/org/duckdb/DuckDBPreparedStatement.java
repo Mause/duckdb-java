@@ -562,14 +562,14 @@ public class DuckDBPreparedStatement implements PreparedStatement {
         throw new SQLFeatureNotSupportedException("isPoolable");
     }
 
-    @Override
+    // @Override
     public void closeOnCompletion() throws SQLException {
         if (isClosed())
             throw new SQLException("Statement is closed");
         closeOnCompletion = true;
     }
 
-    @Override
+    // @Override
     public boolean isCloseOnCompletion() throws SQLException {
         if (isClosed())
             throw new SQLException("Statement is closed");
@@ -741,7 +741,7 @@ public class DuckDBPreparedStatement implements PreparedStatement {
             }
             break;
         case Types.TIMESTAMP:
-        case Types.TIMESTAMP_WITH_TIMEZONE:
+            //        case Types.TIMESTAMP_WITH_TIMEZONE:
             if (x instanceof Timestamp) {
                 setObject(parameterIndex, x);
             } else if (x instanceof LocalDateTime) {

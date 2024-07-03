@@ -14,8 +14,6 @@ import java.sql.Types;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.sql.rowset.CachedRowSet;
-import javax.sql.rowset.RowSetProvider;
 
 public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
@@ -171,7 +169,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         ResultSet rs = statement.executeQuery("SELECT keyword_name FROM duckdb_keywords()");
         StringBuilder sb = new StringBuilder();
@@ -184,7 +182,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         ResultSet rs = statement.executeQuery("SELECT DISTINCT function_name FROM duckdb_functions() "
                                               + "WHERE parameter_types[1] ='DECIMAL'"
@@ -201,7 +199,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getStringFunctions() throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         ResultSet rs = statement.executeQuery(
             "SELECT DISTINCT function_name FROM duckdb_functions() WHERE parameter_types[1] = 'VARCHAR'");
@@ -215,7 +213,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getSystemFunctions() throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         ResultSet rs = statement.executeQuery(
             "SELECT DISTINCT function_name FROM duckdb_functions() WHERE length(parameter_types) = 0");
@@ -229,7 +227,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getTimeDateFunctions() throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         ResultSet rs = statement.executeQuery(
             "SELECT DISTINCT function_name FROM duckdb_functions() WHERE parameter_types[1] LIKE 'TIME%'");
@@ -679,7 +677,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getCatalogs() throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         return statement.executeQuery(
             "SELECT DISTINCT catalog_name AS 'TABLE_CAT' FROM information_schema.schemata ORDER BY \"TABLE_CAT\"");
@@ -687,7 +685,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public ResultSet getSchemas() throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         return statement.executeQuery(
             "SELECT schema_name AS 'TABLE_SCHEM', catalog_name AS 'TABLE_CATALOG' FROM information_schema.schemata ORDER BY \"TABLE_CATALOG\", \"TABLE_SCHEM\"");
@@ -726,7 +724,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
         sb.append("ORDER BY \"TABLE_CATALOG\", \"TABLE_SCHEM\"");
         sb.append(lineSeparator());
 
-        PreparedStatement ps = conn.prepareStatement(sb.toString());
+        DuckDBPreparedStatement ps = conn.prepareStatement(sb.toString()).unwrap(DuckDBPreparedStatement.class);
         int paramIndex = 0;
         if (catalog != null && !catalog.isEmpty()) {
             ps.setString(++paramIndex, catalog);
@@ -756,7 +754,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
             }
         }
         stringBuilder.append("\nORDER BY TABLE_TYPE");
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         return statement.executeQuery(stringBuilder.toString());
     }
@@ -833,7 +831,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
         str.append(", table_schema").append(lineSeparator());
         str.append(", table_name").append(lineSeparator());
 
-        PreparedStatement ps = conn.prepareStatement(str.toString());
+        DuckDBPreparedStatement ps = conn.prepareStatement(str.toString()).unwrap(DuckDBPreparedStatement.class);
 
         int paramOffset = 1;
         ps.setString(paramOffset++, tableNamePattern);
@@ -870,7 +868,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
             columnNamePattern = "%";
         }
 
-        PreparedStatement ps =
+        DuckDBPreparedStatement ps =
             conn.prepareStatement("SELECT "
                                   + "table_catalog AS 'TABLE_CAT', "
                                   + "table_schema AS 'TABLE_SCHEM', "
@@ -900,7 +898,8 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
                                   + "table_schema LIKE ? AND "
                                   + "table_name LIKE ? AND "
                                   + "column_name LIKE ? "
-                                  + "ORDER BY \"TABLE_CAT\",\"TABLE_SCHEM\", \"TABLE_NAME\", \"ORDINAL_POSITION\"");
+                                  + "ORDER BY \"TABLE_CAT\",\"TABLE_SCHEM\", \"TABLE_NAME\", \"ORDINAL_POSITION\"")
+                .unwrap(DuckDBPreparedStatement.class);
         ps.setString(1, catalogPattern);
         ps.setString(2, schemaPattern);
         ps.setString(3, tableNamePattern);
@@ -924,7 +923,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
     @Override
     public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern)
         throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         return statement.executeQuery("SELECT NULL WHERE FALSE");
     }
@@ -932,7 +931,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
     @Override
     public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern,
                                          String columnNamePattern) throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         return statement.executeQuery("SELECT NULL WHERE FALSE");
     }
@@ -992,7 +991,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
         pw.append("ORDER BY \"TABLE_CAT\", \"TABLE_SCHEM\", \"TABLE_NAME\", \"KEY_SEQ\"").append(lineSeparator());
 
         int paramIndex = 1;
-        PreparedStatement ps = conn.prepareStatement(pw.toString());
+        DuckDBPreparedStatement ps = conn.prepareStatement(pw.toString()).unwrap(DuckDBPreparedStatement.class);
 
         if (catalog != null && !catalog.isEmpty()) {
             ps.setString(paramIndex++, catalog);
@@ -1054,7 +1053,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
             sb.append(" AND table_name = ?");
         }
         sb.append(" ORDER BY TABLE_CAT, TABLE_SCHEM, TABLE_NAME, NON_UNIQUE, INDEX_NAME, ORDINAL_POSITION");
-        PreparedStatement ps = conn.prepareStatement(sb.toString());
+        DuckDBPreparedStatement ps = conn.prepareStatement(sb.toString()).unwrap(DuckDBPreparedStatement.class);
         int paramIndex = 1;
         if (catalog != null) {
             ps.setString(paramIndex++, catalog);
@@ -1269,44 +1268,43 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
     @Override
     public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
         throws SQLException {
-        try (PreparedStatement statement =
-                 conn.prepareStatement("SELECT "
-                                       + "null as FUNCTION_CAT, "
-                                       + "function_name as FUNCTION_NAME, "
-                                       + "schema_name as FUNCTION_SCHEM, "
-                                       + "description as REMARKS,"
-                                       + "CASE function_type "
-                                       + "WHEN 'table' THEN " + functionReturnsTable + " "
-                                       + "WHEN 'table_macro' THEN " + functionReturnsTable + " "
-                                       + "ELSE " + functionNoTable + " "
-                                       + "END as FUNCTION_TYPE "
-                                       + "FROM duckdb_functions() "
-                                       + "WHERE function_name like ? and "
-                                       + "schema_name like ?")) {
-            statement.setString(1, functionNamePattern);
-            statement.setString(2, schemaPattern);
+        DuckDBPreparedStatement statement =
+            conn.prepareStatement("SELECT "
+                                  + "null as FUNCTION_CAT, "
+                                  + "function_name as FUNCTION_NAME, "
+                                  + "schema_name as FUNCTION_SCHEM, "
+                                  + "description as REMARKS,"
+                                  + "CASE function_type "
+                                  + "WHEN 'table' THEN " + functionReturnsTable + " "
+                                  + "WHEN 'table_macro' THEN " + functionReturnsTable + " "
+                                  + "ELSE " + functionNoTable + " "
+                                  + "END as FUNCTION_TYPE "
+                                  + "FROM duckdb_functions() "
+                                  + "WHERE function_name like ? and "
+                                  + "schema_name like ?")
+                .unwrap(DuckDBPreparedStatement.class);
+        statement.setString(1, functionNamePattern);
+        statement.setString(2, schemaPattern);
+        statement.closeOnCompletion();
 
-            CachedRowSet cachedRowSet = RowSetProvider.newFactory().createCachedRowSet();
-            cachedRowSet.populate(statement.executeQuery());
-            return cachedRowSet;
-        }
+        return statement.executeQuery();
     }
 
     @Override
     public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern,
                                         String columnNamePattern) throws SQLException {
-        Statement statement = conn.createStatement();
+        DuckDBPreparedStatement statement = conn.createStatement().unwrap(DuckDBPreparedStatement.class);
         statement.closeOnCompletion();
         return statement.executeQuery("SELECT NULL WHERE FALSE");
     }
 
-    @Override
+    // @Override
     public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern,
                                       String columnNamePattern) throws SQLException {
         throw new SQLFeatureNotSupportedException("getPseudoColumns");
     }
 
-    @Override
+    // @Override
     public boolean generatedKeyAlwaysReturned() throws SQLException {
         throw new SQLFeatureNotSupportedException("generatedKeyAlwaysReturned");
     }

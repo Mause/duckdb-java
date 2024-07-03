@@ -1014,12 +1014,12 @@ public class DuckDBArrayResultSet implements ResultSet {
         throw new SQLFeatureNotSupportedException("updateNClob");
     }
 
-    @Override
+    //    @Override
     public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
         throw new SQLFeatureNotSupportedException("getObject");
     }
 
-    @Override
+    //    @Override
     public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
         throw new SQLFeatureNotSupportedException("getObject");
     }
