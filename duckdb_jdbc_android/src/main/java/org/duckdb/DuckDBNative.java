@@ -14,13 +14,22 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 class DuckDBNative {
+
     static {
+        String java_vendor = System.getProperty("java.vendor");
+        if ("The Android Project".equals(java_vendor)) {
+            System.loadLibrary("duckdb_java");
+        } else {
+            loadFromFilesystem();
+        }
+    }
+
+    private static void loadFromFilesystem() {
         try {
             String os_name = "";
             String os_arch;
             String os_name_detect = System.getProperty("os.name").toLowerCase().trim();
             String os_arch_detect = System.getProperty("os.arch").toLowerCase().trim();
-            String java_vendor = System.getProperty("java.vendor");
             switch (os_arch_detect) {
             case "x86_64":
             case "amd64":
@@ -36,9 +45,7 @@ class DuckDBNative {
             default:
                 throw new IllegalStateException("Unsupported system architecture");
             }
-            if (java_vendor.equals("The Android Project")) {
-                os_name = "android";
-            } else if (os_name_detect.startsWith("windows")) {
+            if (os_name_detect.startsWith("windows")) {
                 os_name = "windows";
             } else if (os_name_detect.startsWith("mac")) {
                 os_name = "osx";
