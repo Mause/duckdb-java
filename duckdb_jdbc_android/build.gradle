@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        minSdk 24
+        minSdk 26
         versionCode 1
         versionName '1.0'
 
@@ -23,13 +23,9 @@ android {
         externalNativeBuild {
             cmake {
                 arguments(
-                    '-DJDBC_DRIVER=1',
-                    '-DEXTENSION_STATIC_BUILD=1',
                     '-DOVERRIDE_JDBC_OS_ARCH=arm64',
                     '-DANDROID_ARM_MODE=arm',
                     '-DANDROID_STL=c++_shared',
-                    '-DENABLE_SANITIZER=FALSE',
-                    '-DENABLE_UBSAN=0'
                 )
 
                 targets 'duckdb_java'
