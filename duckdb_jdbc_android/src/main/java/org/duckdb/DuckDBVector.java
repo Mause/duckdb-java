@@ -314,7 +314,7 @@ class DuckDBVector {
         }
 
         if (isType(DuckDBColumnType.DATE)) {
-            return Date.valueOf(this.getLocalDate(idx));
+            return Date.valueOf(this.getLocalDate(idx).toString());
         }
 
         String string_value = getLazyString(idx);
@@ -341,7 +341,7 @@ class DuckDBVector {
         }
 
         if (isType(DuckDBColumnType.TIME)) {
-            return Time.valueOf(getLocalTime(idx));
+            return Time.valueOf(getLocalTime(idx).toString());
         }
 
         String string_value = getLazyString(idx);

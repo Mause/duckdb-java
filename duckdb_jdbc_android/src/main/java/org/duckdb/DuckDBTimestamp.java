@@ -30,8 +30,13 @@ public class DuckDBTimestamp {
                                                                  ChronoUnit.MICROS);
     }
 
+    private static LocalDateTime toLocalDateTime(Timestamp sqlTimestamp) {
+        return LocalDateTime.ofEpochSecond(sqlTimestamp.getTime(), 0, ZoneOffset.UTC);
+    }
+
     public DuckDBTimestamp(Timestamp sqlTimestamp) {
-        this.timeMicros = DuckDBTimestamp.RefLocalDateTime.until(sqlTimestamp.toLocalDateTime(), ChronoUnit.MICROS);
+
+        this.timeMicros = DuckDBTimestamp.RefLocalDateTime.until(toLocalDateTime(sqlTimestamp), ChronoUnit.MICROS);
     }
 
     final static LocalDateTime RefLocalDateTime;
@@ -39,12 +44,13 @@ public class DuckDBTimestamp {
 
     public static Timestamp toSqlTimestamp(long timeMicros) {
         return Timestamp.valueOf(
-            LocalDateTime.ofEpochSecond(micros2seconds(timeMicros), nanosPartMicros(timeMicros), ZoneOffset.UTC));
+            LocalDateTime.ofEpochSecond(micros2seconds(timeMicros), nanosPartMicros(timeMicros), ZoneOffset.UTC).toString());
     }
 
     public static Timestamp toSqlTimestampNanos(long timeNanos) {
         return Timestamp.valueOf(
-            LocalDateTime.ofEpochSecond(nanos2seconds(timeNanos), nanosPartNanos(timeNanos), ZoneOffset.UTC));
+            LocalDateTime.ofEpochSecond(nanos2seconds(timeNanos), nanosPartNanos(timeNanos), ZoneOffset.UTC)
+                .toString());
     }
 
     public static LocalDateTime toLocalDateTime(long timeMicros) {
@@ -90,11 +96,11 @@ public class DuckDBTimestamp {
     }
 
     public static Timestamp fromMicroInstant(long micros) {
-        return Timestamp.from(Instant.ofEpochSecond(micros / 1_000_000, nanosPartMicros(micros)));
+        return Timestamp.valueOf(Instant.ofEpochSecond(micros / 1_000_000, nanosPartMicros(micros)).toString());
     }
 
     public static Timestamp fromNanoInstant(long nanos) {
-        return Timestamp.from(Instant.ofEpochSecond(nanos / 1_000_000_000, nanosPartNanos(nanos)));
+        return Timestamp.valueOf(Instant.ofEpochSecond(nanos / 1_000_000_000, nanosPartNanos(nanos)).toString());
     }
 
     public static long localDateTime2Micros(LocalDateTime localDateTime) {
@@ -119,7 +125,7 @@ public class DuckDBTimestamp {
     }
 
     public Timestamp toSqlTimestamp() {
-        return Timestamp.valueOf(this.toLocalDateTime());
+        return Timestamp.valueOf(this.toLocalDateTime().toString());
     }
 
     public LocalDateTime toLocalDateTime() {
@@ -131,7 +137,7 @@ public class DuckDBTimestamp {
     }
 
     public static long getMicroseconds(Timestamp sqlTimestamp) {
-        return DuckDBTimestamp.RefLocalDateTime.until(sqlTimestamp.toLocalDateTime(), ChronoUnit.MICROS);
+        return DuckDBTimestamp.RefLocalDateTime.until(toLocalDateTime(sqlTimestamp), ChronoUnit.MICROS);
     }
 
     public long getMicrosEpoch() {

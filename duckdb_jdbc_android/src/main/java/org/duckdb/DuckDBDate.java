@@ -8,7 +8,7 @@ public class DuckDBDate {
     private final long daysSinceEpoch;
 
     public DuckDBDate(Date date) {
-        this.daysSinceEpoch = LocalDate.ofEpochDay(0).until(date.toLocalDate(), ChronoUnit.DAYS);
+        this.daysSinceEpoch = LocalDate.ofEpochDay(0).until(LocalDate.parse(date.toString()), ChronoUnit.DAYS);
     }
 
     public long getDaysSinceEpoch() {
