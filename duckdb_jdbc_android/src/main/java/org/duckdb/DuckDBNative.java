@@ -20,6 +20,7 @@ class DuckDBNative {
             String os_arch;
             String os_name_detect = System.getProperty("os.name").toLowerCase().trim();
             String os_arch_detect = System.getProperty("os.arch").toLowerCase().trim();
+            String java_vendor = System.getProperty("java.vendor");
             switch (os_arch_detect) {
             case "x86_64":
             case "amd64":
@@ -35,7 +36,9 @@ class DuckDBNative {
             default:
                 throw new IllegalStateException("Unsupported system architecture");
             }
-            if (os_name_detect.startsWith("windows")) {
+            if (java_vendor.equals("The Android Project")) {
+                os_name = "android";
+            } else if (os_name_detect.startsWith("windows")) {
                 os_name = "windows";
             } else if (os_name_detect.startsWith("mac")) {
                 os_name = "osx";
@@ -49,7 +52,7 @@ class DuckDBNative {
             Path lib_file = Files.createTempFile("libduckdb_java", ".so");
             URL lib_res = DuckDBNative.class.getResource(lib_res_name);
             if (lib_res == null) {
-                System.load(Paths.get("build/debug", lib_res_name).normalize().toAbsolutePath().toString());
+                System.load(Paths.get("../build/debug", lib_res_name).normalize().toAbsolutePath().toString());
             } else {
                 try (final InputStream lib_res_input_stream = lib_res.openStream()) {
                     Files.copy(lib_res_input_stream, lib_file, StandardCopyOption.REPLACE_EXISTING);

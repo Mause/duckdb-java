@@ -44,6 +44,8 @@ jobs:
       - run: ./gradlew assembleDebug --info --scan
         name: Build
 
+      - run: ./gradlew test
+
       - uses: actions/upload-artifact@v3
         with:
           name: duckdb-android-aarch64
