@@ -59,10 +59,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import org.junit.Test;
 
 public class TestDuckDBJDBC {
 
     public static final String JDBC_URL = "jdbc:duckdb:";
+    static {
+        new org.duckdb.DuckDBDriver(); // register
+    }
 
     private static void createTable(Connection conn) throws SQLException {
         try (Statement createStmt = conn.createStatement()) {
@@ -95,7 +99,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_connection() throws Exception {
+    @Test
+    public void test_connection() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         assertTrue(conn.isValid(0));
         assertFalse(conn.isClosed());
@@ -146,14 +151,16 @@ public class TestDuckDBJDBC {
         assertThrows(conn::createStatement, SQLException.class);
     }
 
-    public static void test_prepare_exception() throws Exception {
+    @Test
+    public void test_prepare_exception() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
         assertThrows(() -> stmt.execute("this is no SQL;"), SQLException.class);
     }
 
-    public static void test_execute_exception() throws Exception {
+    @Test
+    public void test_execute_exception() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -163,7 +170,8 @@ public class TestDuckDBJDBC {
         }, SQLException.class);
     }
 
-    public static void test_autocommit_off() throws Exception {
+    @Test
+    public void test_autocommit_off() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         ResultSet rs;
@@ -216,7 +224,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_enum() throws Exception {
+    @Test
+    public void test_enum() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -337,19 +346,22 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_timestamp_ms() throws Exception {
+    @Test
+    public void test_timestamp_ms() throws Exception {
         String expectedString = "2022-08-17 12:11:10.999";
         String sql = "SELECT '2022-08-17T12:11:10.999'::TIMESTAMP_MS as ts_ms";
         assert_timestamp_match(sql, expectedString, "TIMESTAMP_MS");
     }
 
-    public static void test_timestamp_ns() throws Exception {
+    @Test
+    public void test_timestamp_ns() throws Exception {
         String expectedString = "2022-08-17 12:11:10.999999999";
         String sql = "SELECT '2022-08-17T12:11:10.999999999'::TIMESTAMP_NS as ts_ns";
         assert_timestamp_match(sql, expectedString, "TIMESTAMP_NS");
     }
 
-    public static void test_timestamp_s() throws Exception {
+    @Test
+    public void test_timestamp_s() throws Exception {
         String expectedString = "2022-08-17 12:11:10";
         String sql = "SELECT '2022-08-17T12:11:10'::TIMESTAMP_S as ts_s";
         assert_timestamp_match(sql, expectedString, "TIMESTAMP_S");
@@ -392,7 +404,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_timestamp_tz() throws Exception {
+    @Test
+    public void test_timestamp_tz() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -450,7 +463,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_timestamp_as_long() throws Exception {
+    @Test
+    public void test_timestamp_as_long() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -471,7 +485,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_timestamptz_as_long() throws Exception {
+    @Test
+    public void test_timestamptz_as_long() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -494,7 +509,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_consecutive_timestamps() throws Exception {
+    @Test
+    public void test_consecutive_timestamps() throws Exception {
         long expected = 986860800000L;
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement()) {
             try (ResultSet rs = stmt.executeQuery(
@@ -508,7 +524,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_throw_wrong_datatype() throws Exception {
+    @Test
+    public void test_throw_wrong_datatype() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         ResultSet rs;
@@ -526,7 +543,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_list_metadata() throws Exception {
+    @Test
+    public void test_list_metadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT generate_series(2) as list");) {
             ResultSetMetaData meta = rs.getMetaData();
@@ -537,7 +555,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_struct_metadata() throws Exception {
+    @Test
+    public void test_struct_metadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT {'i': 42, 'j': 'a'} as struct")) {
             ResultSetMetaData meta = rs.getMetaData();
@@ -548,7 +567,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_map_metadata() throws Exception {
+    @Test
+    public void test_map_metadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT map([1,2],['a','b']) as map")) {
             ResultSetMetaData meta = rs.getMetaData();
@@ -559,7 +579,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_union_metadata() throws Exception {
+    @Test
+    public void test_union_metadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT union_value(str := 'three') as union")) {
             ResultSetMetaData meta = rs.getMetaData();
@@ -570,7 +591,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_native_duckdb_array() throws Exception {
+    @Test
+    public void test_native_duckdb_array() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              PreparedStatement stmt = conn.prepareStatement("SELECT generate_series(1)::BIGINT[2] as \"array\"");
              ResultSet rs = stmt.executeQuery()) {
@@ -586,7 +608,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_result() throws Exception {
+    @Test
+    public void test_result() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -644,7 +667,8 @@ public class TestDuckDBJDBC {
         conn2.close();
     }
 
-    public static void test_empty_table() throws Exception {
+    @Test
+    public void test_empty_table() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -659,7 +683,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_broken_next() throws Exception {
+    @Test
+    public void test_broken_next() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -680,7 +705,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_multiple_connections() throws Exception {
+    @Test
+    public void test_multiple_connections() throws Exception {
         Connection conn1 = DriverManager.getConnection(JDBC_URL);
         Statement stmt1 = conn1.createStatement();
         Connection conn2 = DriverManager.getConnection(JDBC_URL);
@@ -749,7 +775,8 @@ public class TestDuckDBJDBC {
         stmt1.close();
     }
 
-    public static void test_duckdb_timestamp() throws Exception {
+    @Test
+    public void test_duckdb_timestamp() throws Exception {
 
         duckdb_timestamp_test();
 
@@ -859,7 +886,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_duckdb_localdatetime() throws Exception {
+    @Test
+    public void test_duckdb_localdatetime() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         stmt.execute("CREATE TABLE x (ts TIMESTAMP)");
@@ -884,7 +912,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_duckdb_getObject_with_class() throws Exception {
+    @Test
+    public void test_duckdb_getObject_with_class() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         stmt.execute("CREATE TABLE b (vchar VARCHAR, bo BOOLEAN, sint SMALLINT, nint INTEGER, bigi BIGINT,"
@@ -968,7 +997,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_multiple_statements_execution() throws Exception {
+    @Test
+    public void test_multiple_statements_execution() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery("CREATE TABLE integers(i integer);\n"
@@ -982,7 +1012,8 @@ public class TestDuckDBJDBC {
         assertEquals(i, 10);
     }
 
-    public static void test_multiple_statements_exception() throws Exception {
+    @Test
+    public void test_multiple_statements_exception() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         boolean succ = false;
@@ -997,7 +1028,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_bigdecimal() throws Exception {
+    @Test
+    public void test_bigdecimal() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         stmt.execute(
@@ -1110,7 +1142,8 @@ public class TestDuckDBJDBC {
     }
 
     // Longer, resource intensive test - might be commented out for a quick test run
-    public static void test_lots_of_timestamps() throws Exception {
+    @Test
+    public void test_lots_of_timestamps() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         stmt.execute("CREATE TABLE a (ts TIMESTAMP)");
@@ -1137,7 +1170,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_set_date() throws Exception {
+    @Test
+    public void test_set_date() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              PreparedStatement stmt = conn.prepareStatement("SELECT ?")) {
             Date date = Date.valueOf("1969-01-01");
@@ -1149,7 +1183,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_set_time() throws Exception {
+    @Test
+    public void test_set_time() throws Exception {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              PreparedStatement stmt = conn.prepareStatement("SELECT ?::VARCHAR")) {
@@ -1162,7 +1197,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_lots_of_decimals() throws Exception {
+    @Test
+    public void test_lots_of_decimals() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         // Create the table
@@ -1241,7 +1277,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_big_data() throws Exception {
+    @Test
+    public void test_big_data() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         int rows = 10000;
@@ -1295,7 +1332,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_crash_bug496() throws Exception {
+    @Test
+    public void test_crash_bug496() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1306,7 +1344,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_tablepragma_bug491() throws Exception {
+    @Test
+    public void test_tablepragma_bug491() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1329,7 +1368,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_nulltruth_bug489() throws Exception {
+    @Test
+    public void test_nulltruth_bug489() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1350,7 +1390,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_empty_prepare_bug500() throws Exception {
+    @Test
+    public void test_empty_prepare_bug500() throws Exception {
         String fileContent = "CREATE TABLE t0(c0 VARCHAR, c1 DOUBLE);\n"
                              + "CREATE TABLE t1(c0 DOUBLE, PRIMARY KEY(c0));\n"
                              + "INSERT INTO t0(c0) VALUES (0), (0), (0), (0);\n"
@@ -1370,7 +1411,8 @@ public class TestDuckDBJDBC {
         con.close();
     }
 
-    public static void test_borked_string_bug539() throws Exception {
+    @Test
+    public void test_borked_string_bug539() throws Exception {
         Connection con = DriverManager.getConnection(JDBC_URL);
         Statement s = con.createStatement();
         s.executeUpdate("CREATE TABLE t0 (c0 VARCHAR)");
@@ -1380,7 +1422,8 @@ public class TestDuckDBJDBC {
         con.close();
     }
 
-    public static void test_prepare_types() throws Exception {
+    @Test
+    public void test_prepare_types() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
 
         PreparedStatement ps = conn.prepareStatement(
@@ -1471,7 +1514,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_prepare_insert() throws Exception {
+    @Test
+    public void test_prepare_insert() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
 
         conn.createStatement().executeUpdate(
@@ -1527,7 +1571,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_read_only() throws Exception {
+    @Test
+    public void test_read_only() throws Exception {
         Path database_file = Files.createTempFile("duckdb-jdbc-test-", ".duckdb");
         Files.deleteIfExists(database_file);
 
@@ -1601,7 +1646,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_hugeint() throws Exception {
+    @Test
+    public void test_hugeint() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1624,7 +1670,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_temporal_types() throws Exception {
+    @Test
+    public void test_temporal_types() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1648,7 +1695,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_calendar_types() throws Exception {
+    @Test
+    public void test_calendar_types() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1670,7 +1718,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_temporal_nulls() throws Exception {
+    @Test
+    public void test_temporal_nulls() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1691,7 +1740,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_evil_date() throws Exception {
+    @Test
+    public void test_evil_date() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1706,7 +1756,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_decimal() throws Exception {
+    @Test
+    public void test_decimal() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -1721,7 +1772,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_schema_reflection() throws Exception {
+    @Test
+    public void test_schema_reflection() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         stmt.execute("CREATE TABLE a (i INTEGER)");
@@ -1907,7 +1959,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_time_tz() throws Exception {
+    @Test
+    public void test_time_tz() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement s = conn.createStatement()) {
             s.execute("set timezone = 'UTC'");
             s.executeUpdate("create table t (i time with time zone)");
@@ -1936,7 +1989,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_get_tables_with_current_catalog() throws Exception {
+    @Test
+    public void test_get_tables_with_current_catalog() throws Exception {
         ResultSet resultSet = null;
         Connection conn = DriverManager.getConnection(JDBC_URL);
         final String currentCatalog = conn.getCatalog();
@@ -1960,7 +2014,8 @@ public class TestDuckDBJDBC {
         resultSet.close();
     }
 
-    public static void test_get_tables_with_attached_catalog() throws Exception {
+    @Test
+    public void test_get_tables_with_attached_catalog() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         final String currentCatalog = conn.getCatalog();
         DatabaseMetaData databaseMetaData = conn.getMetaData();
@@ -2017,7 +2072,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_get_tables_param_binding_for_table_types() throws Exception {
+    @Test
+    public void test_get_tables_param_binding_for_table_types() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         DatabaseMetaData databaseMetaData = conn.getMetaData();
         ResultSet rs = databaseMetaData.getTables(null, null, null,
@@ -2037,7 +2093,8 @@ public class TestDuckDBJDBC {
         rs.close();
     }
 
-    public static void test_get_table_types() throws Exception {
+    @Test
+    public void test_get_table_types() throws Exception {
         String[] tableTypesArray = new String[] {"BASE TABLE", "LOCAL TEMPORARY", "VIEW"};
         List<String> tableTypesList = new ArrayList<>(asList(tableTypesArray));
         tableTypesList.sort(Comparator.naturalOrder());
@@ -2057,7 +2114,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_get_schemas_with_params() throws Exception {
+    @Test
+    public void test_get_schemas_with_params() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         String inputCatalog = conn.getCatalog();
         String inputSchema = ""; // conn.getSchema();
@@ -2128,12 +2186,14 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_connect_wrong_url_bug848() throws Exception {
+    @Test
+    public void test_connect_wrong_url_bug848() throws Exception {
         Driver d = new DuckDBDriver();
         assertNull(d.connect("jdbc:h2:", null));
     }
 
-    public static void test_new_connection_wrong_url_bug10441() throws Exception {
+    @Test
+    public void test_new_connection_wrong_url_bug10441() throws Exception {
         assertThrows(() -> {
             Connection connection = DuckDBConnection.newConnection("jdbc:duckdb@", false, new Properties());
             try {
@@ -2144,7 +2204,8 @@ public class TestDuckDBJDBC {
         }, SQLException.class);
     }
 
-    public static void test_parquet_reader() throws Exception {
+    @Test
+    public void test_parquet_reader() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM parquet_scan('data/parquet-testing/userdata1.parquet')");
@@ -2155,7 +2216,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_crash_autocommit_bug939() throws Exception {
+    @Test
+    public void test_crash_autocommit_bug939() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         PreparedStatement stmt = conn.prepareStatement("CREATE TABLE ontime(flightdate DATE)");
         conn.setAutoCommit(false); // The is the key to getting the crash to happen.
@@ -2164,7 +2226,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_explain_bug958() throws Exception {
+    @Test
+    public void test_explain_bug958() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery("EXPLAIN SELECT 42");
@@ -2177,7 +2240,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_numbers() throws Exception {
+    @Test
+    public void test_appender_numbers() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2224,7 +2288,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_date_and_time() throws Exception {
+    @Test
+    public void test_appender_date_and_time() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2278,7 +2343,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_decimal() throws Exception {
+    @Test
+    public void test_appender_decimal() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection("jdbc:duckdb:").unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2408,7 +2474,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_decimal_wrong_scale() throws Exception {
+    @Test
+    public void test_appender_decimal_wrong_scale() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection("jdbc:duckdb:").unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2446,7 +2513,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_int_string() throws Exception {
+    @Test
+    public void test_appender_int_string() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2475,7 +2543,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_string_with_emoji() throws Exception {
+    @Test
+    public void test_appender_string_with_emoji() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2499,7 +2568,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_table_does_not_exist() throws Exception {
+    @Test
+    public void test_appender_table_does_not_exist() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2512,7 +2582,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_table_deleted() throws Exception {
+    @Test
+    public void test_appender_table_deleted() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2535,7 +2606,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_append_too_many_columns() throws Exception {
+    @Test
+    public void test_appender_append_too_many_columns() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2552,7 +2624,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_append_too_few_columns() throws Exception {
+    @Test
+    public void test_appender_append_too_few_columns() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2569,7 +2642,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_type_mismatch() throws Exception {
+    @Test
+    public void test_appender_type_mismatch() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2585,7 +2659,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_null_integer() throws Exception {
+    @Test
+    public void test_appender_null_integer() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2610,7 +2685,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_appender_null_varchar() throws Exception {
+    @Test
+    public void test_appender_null_varchar() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2634,7 +2710,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_get_catalog() throws Exception {
+    @Test
+    public void test_get_catalog() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         ResultSet rs = conn.getMetaData().getCatalogs();
         HashSet<String> set = new HashSet<String>();
@@ -2647,7 +2724,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_set_catalog() throws Exception {
+    @Test
+    public void test_set_catalog() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
 
             assertThrows(() -> conn.setCatalog("other"), SQLException.class);
@@ -2661,7 +2739,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_get_table_types_bug1258() throws Exception {
+    @Test
+    public void test_get_table_types_bug1258() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         stmt.execute("CREATE TABLE a1 (i INTEGER)");
@@ -2719,7 +2798,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_utf_string_bug1271() throws Exception {
+    @Test
+    public void test_utf_string_bug1271() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2739,7 +2819,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_statement_creation_bug1268() throws Exception {
+    @Test
+    public void test_statement_creation_bug1268() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt;
 
@@ -2769,7 +2850,8 @@ public class TestDuckDBJDBC {
         return new String(b.getBytes(1, (int) b.length()), StandardCharsets.US_ASCII);
     }
 
-    public static void test_blob_bug1090() throws Exception {
+    @Test
+    public void test_blob_bug1090() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2802,7 +2884,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_uuid() throws Exception {
+    @Test
+    public void test_uuid() throws Exception {
         // Generated by DuckDB
         String testUuid = "a0a34a0a-1794-47b6-b45c-0ac68cc03702";
 
@@ -2835,7 +2918,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_unsigned_integers() throws Exception {
+    @Test
+    public void test_unsigned_integers() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         Statement stmt = conn.createStatement();
 
@@ -2878,7 +2962,8 @@ public class TestDuckDBJDBC {
         conn.close();
     }
 
-    public static void test_get_schema() throws Exception {
+    @Test
+    public void test_get_schema() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
 
         assertEquals(conn.getSchema(), DuckDBConnection.DEFAULT_SCHEMA);
@@ -2905,7 +2990,7 @@ public class TestDuckDBJDBC {
 
     /**
      * @see {https://github.com/duckdb/duckdb/issues/3906}
-    public static void test_cached_row_set() throws Exception {
+    @Test public void test_cached_row_set() throws Exception {
         CachedRowSet rowSet = RowSetProvider.newFactory().createCachedRowSet();
         rowSet.setUrl(JDBC_URL);
         rowSet.setCommand("select 1");
@@ -2916,7 +3001,8 @@ public class TestDuckDBJDBC {
     }
      */
 
-    public static void test_json() throws Exception {
+    @Test
+    public void test_json() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
 
         try (Statement stmt = conn.createStatement()) {
@@ -2948,14 +3034,16 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_bug4218_prepare_types() throws Exception {
+    @Test
+    public void test_bug4218_prepare_types() throws Exception {
         DuckDBConnection conn = DriverManager.getConnection(JDBC_URL).unwrap(DuckDBConnection.class);
         String query = "SELECT ($1 || $2)";
         conn.prepareStatement(query);
         assertTrue(true);
     }
 
-    public static void test_bug532_timestamp() throws Exception {
+    @Test
+    public void test_bug532_timestamp() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
 
@@ -2969,7 +3057,8 @@ public class TestDuckDBJDBC {
         rs.getObject(1);
     }
 
-    public static void test_bug966_typeof() throws Exception {
+    @Test
+    public void test_bug966_typeof() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
         Statement stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery("select typeof(1);");
@@ -2978,7 +3067,8 @@ public class TestDuckDBJDBC {
         assertEquals(rs.getString(1), "INTEGER");
     }
 
-    public static void test_config() throws Exception {
+    @Test
+    public void test_config() throws Exception {
         String memory_limit = "memory_limit";
         String threads = "threads";
 
@@ -2991,7 +3081,8 @@ public class TestDuckDBJDBC {
         assertEquals("5", getSetting(conn, threads));
     }
 
-    public static void test_invalid_config() throws Exception {
+    @Test
+    public void test_invalid_config() throws Exception {
         Properties info = new Properties();
         info.put("invalid config name", "true");
 
@@ -3000,7 +3091,8 @@ public class TestDuckDBJDBC {
         assertTrue(message.contains("Unrecognized configuration property \"invalid config name\""));
     }
 
-    public static void test_valid_but_local_config_throws_exception() throws Exception {
+    @Test
+    public void test_valid_but_local_config_throws_exception() throws Exception {
         Properties info = new Properties();
         info.put("ordered_aggregate_threshold", "123");
 
@@ -3019,7 +3111,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_describe() throws Exception {
+    @Test
+    public void test_describe() throws Exception {
         Connection conn = DriverManager.getConnection(JDBC_URL);
 
         try (Statement stmt = conn.createStatement()) {
@@ -3036,7 +3129,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_null_bytes_in_string() throws Exception {
+    @Test
+    public void test_null_bytes_in_string() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (PreparedStatement stmt = conn.prepareStatement("select ?::varchar")) {
                 stmt.setObject(1, "bob\u0000r");
@@ -3048,7 +3142,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_get_functions() throws Exception {
+    @Test
+    public void test_get_functions() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             ResultSet functions =
                 conn.getMetaData().getFunctions(null, DuckDBConnection.DEFAULT_SCHEMA, "string_split");
@@ -3079,7 +3174,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_get_primary_keys() throws Exception {
+    @Test
+    public void test_get_primary_keys() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement();) {
             Object[][] testData = new Object[12][6];
             int testDataIndex = 0;
@@ -3194,7 +3290,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_instance_cache() throws Exception {
+    @Test
+    public void test_instance_cache() throws Exception {
         Path database_file = Files.createTempFile("duckdb-instance-cache-test-", ".duckdb");
         database_file.toFile().delete();
 
@@ -3207,7 +3304,8 @@ public class TestDuckDBJDBC {
         conn2.close();
     }
 
-    public static void test_user_password() throws Exception {
+    @Test
+    public void test_user_password() throws Exception {
         String jdbc_url = JDBC_URL;
         Properties p = new Properties();
         p.setProperty("user", "wilbur");
@@ -3222,7 +3320,8 @@ public class TestDuckDBJDBC {
         conn2.close();
     }
 
-    public static void test_boolean_config() throws Exception {
+    @Test
+    public void test_boolean_config() throws Exception {
         Properties config = new Properties();
         config.put("enable_external_access", false);
         try (Connection conn = DriverManager.getConnection(JDBC_URL, config);
@@ -3233,7 +3332,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_autoloading_config() throws Exception {
+    @Test
+    public void test_autoloading_config() throws Exception {
         Properties config = new Properties();
         try (Connection conn = DriverManager.getConnection(JDBC_URL, config);
              PreparedStatement stmt = conn.prepareStatement("SELECT current_setting('autoload_known_extensions')");
@@ -3243,7 +3343,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_autoinstall_config() throws Exception {
+    @Test
+    public void test_autoinstall_config() throws Exception {
         Properties config = new Properties();
         try (Connection conn = DriverManager.getConnection(JDBC_URL, config);
              PreparedStatement stmt = conn.prepareStatement("SELECT current_setting('autoinstall_known_extensions')");
@@ -3253,7 +3354,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_readonly_remains_bug5593() throws Exception {
+    @Test
+    public void test_readonly_remains_bug5593() throws Exception {
         Path database_file = Files.createTempFile("duckdb-instance-cache-test-", ".duckdb");
         database_file.toFile().delete();
         String jdbc_url = JDBC_URL + database_file.toString();
@@ -3269,14 +3371,16 @@ public class TestDuckDBJDBC {
         assertTrue(p.containsKey("duckdb.read_only"));
     }
 
-    public static void test_supportsLikeEscapeClause_shouldBe_true() throws Exception {
+    @Test
+    public void test_supportsLikeEscapeClause_shouldBe_true() throws Exception {
         Connection connection = DriverManager.getConnection(JDBC_URL);
         DatabaseMetaData databaseMetaData = connection.getMetaData();
         assertTrue(databaseMetaData.supportsLikeEscapeClause(),
                    "DatabaseMetaData.supportsLikeEscapeClause() should be true.");
     }
 
-    public static void test_supports_catalogs_in_table_definitions() throws Exception {
+    @Test
+    public void test_supports_catalogs_in_table_definitions() throws Exception {
         final String CATALOG_NAME = "tmp";
         final String TABLE_NAME = "t1";
         final String IS_TablesQuery = "SELECT * FROM information_schema.tables " +
@@ -3323,7 +3427,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_supports_catalogs_in_data_manipulation() throws Exception {
+    @Test
+    public void test_supports_catalogs_in_data_manipulation() throws Exception {
         final String CATALOG_NAME = "tmp";
         final String TABLE_NAME = "t1";
         final String COLUMN_NAME = "id";
@@ -3383,7 +3488,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_supports_catalogs_in_index_definitions() throws Exception {
+    @Test
+    public void test_supports_catalogs_in_index_definitions() throws Exception {
         final String CATALOG_NAME = "tmp";
         final String TABLE_NAME = "t1";
         final String INDEX_NAME = "idx1";
@@ -3434,7 +3540,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_structs() throws Exception {
+    @Test
+    public void test_structs() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL);
              PreparedStatement statement = connection.prepareStatement("select {\"a\": 1}")) {
             ResultSet resultSet = statement.executeQuery();
@@ -3455,7 +3562,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_struct_with_timestamp() throws Exception {
+    @Test
+    public void test_struct_with_timestamp() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL)) {
             LocalDateTime now = LocalDateTime.of(LocalDate.of(2020, 5, 12), LocalTime.of(16, 20, 0, 0));
             Struct struct1 = connection.createStruct("STRUCT(start TIMESTAMP)", new Object[] {now});
@@ -3474,7 +3582,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_struct_with_bad_type() throws Exception {
+    @Test
+    public void test_struct_with_bad_type() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL)) {
             Struct struct1 = connection.createStruct("BAD TYPE NAME", new Object[0]);
 
@@ -3501,7 +3610,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_write_map() throws Exception {
+    @Test
+    public void test_write_map() throws Exception {
         try (DuckDBConnection conn = DriverManager.getConnection("jdbc:duckdb:").unwrap(DuckDBConnection.class)) {
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("CREATE TABLE test (thing MAP(string, integer));");
@@ -3519,7 +3629,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_union() throws Exception {
+    @Test
+    public void test_union() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL);
              Statement statement = connection.createStatement()) {
             statement.execute("CREATE TABLE tbl1(u UNION(num INT, str VARCHAR));");
@@ -3535,7 +3646,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_list() throws Exception {
+    @Test
+    public void test_list() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL);
              Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery("select [1]")) {
@@ -3580,7 +3692,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_array_resultset() throws Exception {
+    @Test
+    public void test_array_resultset() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL);
              Statement statement = connection.createStatement()) {
             try (ResultSet rs = statement.executeQuery("select [42, 69]")) {
@@ -3713,7 +3826,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_map() throws Exception {
+    @Test
+    public void test_map() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL);
              PreparedStatement statement = connection.prepareStatement("select map([100, 5], ['a', 'b'])")) {
             ResultSet rs = statement.executeQuery();
@@ -3722,7 +3836,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_getColumnClassName() throws Exception {
+    @Test
+    public void test_getColumnClassName() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement s = conn.createStatement();) {
             try (ResultSet rs = s.executeQuery("select * from test_all_types()")) {
                 ResultSetMetaData rsmd = rs.getMetaData();
@@ -3736,7 +3851,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_update_count() throws Exception {
+    @Test
+    public void test_update_count() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL);
              Statement s = connection.createStatement()) {
             s.execute("create table t (i int)");
@@ -3750,7 +3866,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_get_result_set() throws Exception {
+    @Test
+    public void test_get_result_set() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (PreparedStatement p = conn.prepareStatement("select 1")) {
                 p.executeQuery();
@@ -3772,7 +3889,8 @@ public class TestDuckDBJDBC {
     }
 
     // https://github.com/duckdb/duckdb/issues/7218
-    public static void test_unknown_result_type() throws Exception {
+    @Test
+    public void test_unknown_result_type() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL);
              PreparedStatement p = connection.prepareStatement(
                  "select generate_series.generate_series from generate_series(?, ?) order by 1")) {
@@ -3893,15 +4011,23 @@ public class TestDuckDBJDBC {
         correct_answer_map.put("timestamp", asList(DuckDBTimestamp.toSqlTimestamp(-9223372022400000000L),
                                                    DuckDBTimestamp.toSqlTimestamp(9223372036854775806L), null));
         correct_answer_map.put("date", asList(LocalDate.of(-5877641, 6, 25), LocalDate.of(5881580, 7, 10), null));
-        correct_answer_map.put("timestamp_s",
-                               asList(Timestamp.valueOf(LocalDateTime.of(-290308, 12, 22, 0, 0).toString()),
-                                      Timestamp.valueOf(LocalDateTime.of(294247, 1, 10, 4, 0, 54).toString()), null));
-        correct_answer_map.put("timestamp_ns",
-                               asList(Timestamp.valueOf(LocalDateTime.parse("1677-09-22T00:00:00.0").toString()),
-                                      Timestamp.valueOf(LocalDateTime.parse("2262-04-11T23:47:16.854775806").toString()), null));
-        correct_answer_map.put("timestamp_ms",
-                               asList(Timestamp.valueOf(LocalDateTime.of(-290308, 12, 22, 0, 0, 0).toString()),
-                                      Timestamp.valueOf(LocalDateTime.of(294247, 1, 10, 4, 0, 54, 775000000).toString()), null));
+        correct_answer_map.put(
+            "timestamp_s",
+            asList(new Timestamp(LocalDateTime.of(-290308, 12, 22, 0, 0).toEpochSecond(ZoneOffset.UTC) * 1000),
+                   new Timestamp(LocalDateTime.of(294247, 1, 10, 4, 0, 54).toEpochSecond(ZoneOffset.UTC) * 1000),
+                   null));
+        correct_answer_map.put(
+            "timestamp_ns",
+            asList(new Timestamp(LocalDateTime.parse("1677-09-22T00:00:00.0").toEpochSecond(ZoneOffset.UTC) * 1000),
+                   new Timestamp(LocalDateTime.parse("2262-04-11T23:47:16.854775806").toEpochSecond(ZoneOffset.UTC) *
+                                 1000),
+                   null));
+        correct_answer_map.put(
+            "timestamp_ms",
+            asList(new Timestamp(LocalDateTime.of(-290308, 12, 22, 0, 0, 0).toEpochSecond(ZoneOffset.UTC) * 1000),
+                   new Timestamp(LocalDateTime.of(294247, 1, 10, 4, 0, 54, 775000000).toEpochSecond(ZoneOffset.UTC) *
+                                 1000),
+                   null));
         correct_answer_map.put(
             "timestamp_tz",
             asList(OffsetDateTime.of(LocalDateTime.of(-290308, 12, 22, 0, 0, 0), ZoneOffset.UTC),
@@ -3932,7 +4058,8 @@ public class TestDuckDBJDBC {
                                                                  asList(int_list, int_array, int_list), null));
     }
 
-    public static void test_all_types() throws Exception {
+    @Test
+    public void test_all_types() throws Exception {
         Logger logger = Logger.getAnonymousLogger();
         String sql =
             "select * EXCLUDE(time, time_tz)"
@@ -3987,7 +4114,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_cancel() throws Exception {
+    @Test
+    public void test_cancel() throws Exception {
         ExecutorService service = Executors.newFixedThreadPool(1);
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement()) {
             Future<String> thread = service.submit(
@@ -4002,7 +4130,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_prepared_statement_metadata() throws Exception {
+    @Test
+    public void test_prepared_statement_metadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              PreparedStatement stmt = conn.prepareStatement("SELECT 'hello' as world")) {
             ResultSetMetaData metadata = stmt.getMetaData();
@@ -4012,7 +4141,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_unbindable_query() throws Exception {
+    @Test
+    public void test_unbindable_query() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              PreparedStatement stmt = conn.prepareStatement("SELECT ?, ?")) {
             stmt.setString(1, "word1");
@@ -4044,7 +4174,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_labels_with_prepped_statement() throws Exception {
+    @Test
+    public void test_labels_with_prepped_statement() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (PreparedStatement stmt = conn.prepareStatement("SELECT ? as result")) {
                 stmt.setString(1, "Quack");
@@ -4057,7 +4188,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_execute_updated_on_prep_stmt() throws SQLException {
+    @Test
+    public void test_execute_updated_on_prep_stmt() throws SQLException {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement s = conn.createStatement()) {
             s.executeUpdate("create table t (i int)");
 
@@ -4068,7 +4200,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_invalid_execute_calls() throws Exception {
+    @Test
+    public void test_invalid_execute_calls() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (Statement s = conn.createStatement()) {
                 s.execute("create table test (id int)");
@@ -4085,7 +4218,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_race() throws Exception {
+    @Test
+    public void test_race() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL)) {
             ExecutorService executorService = Executors.newFixedThreadPool(10);
 
@@ -4114,7 +4248,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_stream_multiple_open_results() throws Exception {
+    @Test
+    public void test_stream_multiple_open_results() throws Exception {
         Properties props = new Properties();
         props.setProperty(JDBC_STREAM_RESULTS, String.valueOf(true));
 
@@ -4128,7 +4263,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_offset_limit() throws Exception {
+    @Test
+    public void test_offset_limit() throws Exception {
         try (Connection connection = DriverManager.getConnection(JDBC_URL);
              Statement s = connection.createStatement()) {
             s.executeUpdate("create table t (i int not null)");
@@ -4150,7 +4286,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_UUID_binding() throws Exception {
+    @Test
+    public void test_UUID_binding() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              PreparedStatement statement = conn.prepareStatement("select '0b17ce61-375c-4ad8-97b3-349d96d35ab1'::UUID");
              ResultSet resultSet = statement.executeQuery()) {
@@ -4159,7 +4296,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_result_streaming() throws Exception {
+    @Test
+    public void test_result_streaming() throws Exception {
         Properties props = new Properties();
         props.setProperty(JDBC_STREAM_RESULTS, String.valueOf(true));
 
@@ -4173,7 +4311,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_struct_use_after_free() throws Exception {
+    @Test
+    public void test_struct_use_after_free() throws Exception {
         Object struct, array;
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              PreparedStatement stmt = conn.prepareStatement("SELECT struct_pack(hello := 2), [42]");
@@ -4186,7 +4325,8 @@ public class TestDuckDBJDBC {
         assertEquals(array.toString(), "[42]");
     }
 
-    public static void test_user_agent_default() throws Exception {
+    @Test
+    public void test_user_agent_default() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             assertEquals(getSetting(conn, "custom_user_agent"), "");
 
@@ -4198,7 +4338,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_user_agent_custom() throws Exception {
+    @Test
+    public void test_user_agent_custom() throws Exception {
         Properties props = new Properties();
         props.setProperty(DUCKDB_USER_AGENT_PROPERTY, "CUSTOM_STRING");
 
@@ -4213,7 +4354,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_batch_prepared_statement() throws Exception {
+    @Test
+    public void test_batch_prepared_statement() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (Statement s = conn.createStatement()) {
                 s.execute("CREATE TABLE test (x INT, y INT, z INT)");
@@ -4256,7 +4398,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_batch_statement() throws Exception {
+    @Test
+    public void test_batch_statement() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (Statement s = conn.createStatement()) {
                 s.execute("CREATE TABLE test (x INT, y INT, z INT)");
@@ -4291,7 +4434,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_execute_while_batch() throws Exception {
+    @Test
+    public void test_execute_while_batch() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (Statement s = conn.createStatement()) {
                 s.execute("CREATE TABLE test (id INT)");
@@ -4314,7 +4458,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_prepared_statement_batch_exception() throws Exception {
+    @Test
+    public void test_prepared_statement_batch_exception() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (Statement s = conn.createStatement()) {
                 s.execute("CREATE TABLE test (id INT)");
@@ -4326,7 +4471,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_get_binary_stream() throws Exception {
+    @Test
+    public void test_get_binary_stream() throws Exception {
         try (Connection connection = DriverManager.getConnection("jdbc:duckdb:");
              PreparedStatement s = connection.prepareStatement("select ?")) {
             s.setObject(1, "YWJj".getBytes());
@@ -4342,7 +4488,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_get_bytes() throws Exception {
+    @Test
+    public void test_get_bytes() throws Exception {
         try (Connection connection = DriverManager.getConnection("jdbc:duckdb:");
              PreparedStatement s = connection.prepareStatement("select ?")) {
 
@@ -4371,7 +4518,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_fractional_time() throws Exception {
+    @Test
+    public void test_fractional_time() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              PreparedStatement stmt = conn.prepareStatement("SELECT '01:02:03.123'::TIME");
              ResultSet rs = stmt.executeQuery()) {
@@ -4381,37 +4529,38 @@ public class TestDuckDBJDBC {
     }
 
     enum JDBCType {
-	    BOOLEAN(0),
-	    TINYINT(-6),
-	    SMALLINT(5),
-	    INTEGER(4),
-	    BIGINT(-5),
-	    FLOAT(6),
-	    DOUBLE(8),
-	    DECIMAL(3),
-	    VARCHAR(12),
-	    BLOB(2004),
-	    BIT(-7),
-	    STRUCT(2002),
-	    TIME(92),
-	    DATE(91),
-	    TIMESTAMP(93),
-	    TIME_WITH_TIMEZONE(2013),
-	    TIMESTAMP_WITH_TIMEZONE(2014),
-	    JAVA_OBJECT(2000);
+        BOOLEAN(0),
+        TINYINT(-6),
+        SMALLINT(5),
+        INTEGER(4),
+        BIGINT(-5),
+        FLOAT(6),
+        DOUBLE(8),
+        DECIMAL(3),
+        VARCHAR(12),
+        BLOB(2004),
+        BIT(-7),
+        STRUCT(2002),
+        TIME(92),
+        DATE(91),
+        TIMESTAMP(93),
+        TIME_WITH_TIMEZONE(2013),
+        TIMESTAMP_WITH_TIMEZONE(2014),
+        JAVA_OBJECT(2000);
 
-	    private final int vendorTypeNumber;
+        private final int vendorTypeNumber;
 
-	    JDBCType(int vendorTypeNumber) {
-		    this.vendorTypeNumber = vendorTypeNumber;
-	    }
+        JDBCType(int vendorTypeNumber) {
+            this.vendorTypeNumber = vendorTypeNumber;
+        }
 
-	    public int getVendorTypeNumber() {
-		    return vendorTypeNumber;
-	    }
-	}
+        public int getVendorTypeNumber() {
+            return vendorTypeNumber;
+        }
+    }
 
-    public static void test_column_metadata() throws Exception {
+    @Test
+    public void test_column_metadata() throws Exception {
         Map<String, JDBCType> expectedTypes = new HashMap<>();
         expectedTypes.put("bool", JDBCType.BOOLEAN);
         expectedTypes.put("tinyint", JDBCType.TINYINT);
@@ -4454,7 +4603,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_metadata_get_sql_keywords() throws Exception {
+    @Test
+    public void test_metadata_get_sql_keywords() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             String rs = conn.getMetaData().getSQLKeywords();
             String[] keywords = rs.split(",");
@@ -4466,7 +4616,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_metadata_get_numeric_functions() throws Exception {
+    @Test
+    public void test_metadata_get_numeric_functions() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             String rs = conn.getMetaData().getNumericFunctions();
             // print out rs
@@ -4479,7 +4630,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_metadata_get_string_functions() throws Exception {
+    @Test
+    public void test_metadata_get_string_functions() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             String rs = conn.getMetaData().getStringFunctions();
             String[] functions = rs.split(",");
@@ -4491,7 +4643,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_metadata_get_system_functions() throws Exception {
+    @Test
+    public void test_metadata_get_system_functions() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             String rs = conn.getMetaData().getSystemFunctions();
             String[] functions = rs.split(",");
@@ -4501,7 +4654,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_metadata_get_time_date_functions() throws Exception {
+    @Test
+    public void test_metadata_get_time_date_functions() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             String rs = conn.getMetaData().getTimeDateFunctions();
             String[] functions = rs.split(",");
@@ -4512,7 +4666,8 @@ public class TestDuckDBJDBC {
         }
     }
 
-    public static void test_metadata_get_index_info() throws Exception {
+    @Test
+    public void test_metadata_get_index_info() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("CREATE TABLE test (id INT PRIMARY KEY, ok INT)");
