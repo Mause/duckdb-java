@@ -17,6 +17,7 @@ class DuckDBNative {
 
     static {
         String java_vendor = System.getProperty("java.vendor");
+        System.out.println("java_vendor: " + java_vendor);
         if ("The Android Project".equals(java_vendor)) {
             System.loadLibrary("duckdb_java");
         } else {
