@@ -39,16 +39,14 @@ jobs:
       - uses: gradle/gradle-build-action@v2
 
       - run: ./gradlew tasks --all
-        working-directory: tools/jdbc
         name: Dump tasks
 
       - run: ./gradlew assembleDebug --info --scan
-        working-directory: tools/jdbc
         name: Build
 
       - uses: actions/upload-artifact@v3
         with:
           name: duckdb-android-aarch64
           path: |
-            tools/jdbc/**/build/outputs/**/*.aar
-            tools/jdbc/**/build/outputs/**/*.apk
+            **/build/outputs/**/*.aar
+            **/build/outputs/**/*.apk
