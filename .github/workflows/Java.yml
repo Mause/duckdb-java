@@ -30,14 +30,8 @@ jobs:
       GEN: ninja
     steps:
       - run: |
-          touch ~/.bashrc
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-          . "$HOME/.nvm/nvm.sh"
-          nvm install 20
-          file "$HOME/.nvm/versions/node"
-          ls -a "$HOME/.nvm/versions/node"
-
-          node --version
+          curl -fsSL https://rpm.nodesource.com/setup_current.x -o nodesource_setup.sh
+          bash nodesource_setup.sh
 
       - uses: actions/checkout@v3
         with:
