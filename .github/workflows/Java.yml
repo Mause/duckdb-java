@@ -34,10 +34,10 @@ jobs:
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
           . "$HOME/.nvm/nvm.sh"
           nvm install 20
-          ls "$HOME/.nvm/versions"
-          ls -a "$HOME/.nvm"
+          file "$HOME/.nvm/versions/node"
+          ls -a "$HOME/.nvm/versions/node"
 
-      - run: node --version
+          node --version
 
       - uses: actions/checkout@v3
         with:
