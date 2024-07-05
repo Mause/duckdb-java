@@ -32,6 +32,8 @@ jobs:
       - run: |
           curl -fsSL https://rpm.nodesource.com/setup_current.x -o nodesource_setup.sh
           bash nodesource_setup.sh
+          yum install nodejs -y
+          node --version
 
       - uses: actions/checkout@v3
         with:
