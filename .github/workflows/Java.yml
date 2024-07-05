@@ -34,7 +34,8 @@ jobs:
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
           . "$HOME/.nvm/nvm.sh"
           nvm install 20
-          ls "$HOME/.nvm"
+          ls "$HOME/.nvm/versions"
+          ls -a "$HOME/.nvm"
 
       - run: node --version
 
