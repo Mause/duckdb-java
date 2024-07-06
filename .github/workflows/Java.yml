@@ -36,6 +36,7 @@ jobs:
           cd node-v22.4.0
           ./configure
           make -j4
+          make install
           node --version
 
       - uses: actions/checkout@v3
