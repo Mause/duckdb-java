@@ -29,10 +29,13 @@ jobs:
     env:
       GEN: ninja
     steps:
-      - run: |
-          curl -fsSL https://rpm.nodesource.com/setup_current.x -o nodesource_setup.sh
-          bash nodesource_setup.sh
-          yum install nodejs -y
+      - name: install node
+        run: |
+          curl -O https://nodejs.org/dist/v22.4.0/node-v22.4.0.tar.gz
+          tar xvf node-v22.4.0.tar.gz
+          cd node-v22.4.0
+          ./configure
+          make -j4
           node --version
 
       - uses: actions/checkout@v3
