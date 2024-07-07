@@ -39,6 +39,7 @@ jobs:
           ./node --version
 
       - run: |
+          git config --global --add safe.directory $(pwd)
           git clone https://github.com/${{ github.repository }} --tags .
           git checkout ${{ inputs.git_ref && github.ref }}
 
