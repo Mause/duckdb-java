@@ -39,7 +39,7 @@ jobs:
           ./node --version
 
       - run: |
-          git clone https://github.com/$${{ github.repository }} --tags .
+          git clone https://github.com/${{ github.repository }} --tags .
           git checkout ${{ inputs.git_ref && github.ref }}
 
       - run: |
