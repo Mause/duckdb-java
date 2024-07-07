@@ -12,7 +12,7 @@ runs:
       - name: install node
         shell: bash
         run: |
-          curl -O https://unofficial-builds.nodejs.org/download/release/v22.1.0/node-v22.1 .0-linux-x64-glibc-217.tar.gz
+          curl -O https://unofficial-builds.nodejs.org/download/release/v22.1.0/node-v22.1.0-linux-x64-glibc-217.tar.gz
           tar xf node-v22.1.0-linux-x64-glibc-217.tar.gz
           cd node-v22.1.0-linux-x64-glibc-217/bin
           pwd >> $GITHUB_PATH
