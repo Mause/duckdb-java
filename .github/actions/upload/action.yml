@@ -5,6 +5,13 @@ inputs:
     description: 'Name of the artifact'
   path:
     description: 'Path to the artifact'
+    required: true
+  ACTIONS_RUNTIME_TOKEN:
+    description: 'Token for the actions/upload-artifact action'
+    required: true
+  ACTIONS_RUNTIME_URL:
+    description: 'URL for the actions/upload-artifact action'
+    required: true
 
 runs:
   using: "composite"
