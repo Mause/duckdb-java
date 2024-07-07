@@ -38,7 +38,9 @@ jobs:
           pwd >> $GITHUB_PATH
           ./node --version
 
-      - run: git clone https://github.com/${{ github.repository }} --tags .
+      - run: |
+          git clone https://github.com/$${{ github.repository }} --tags .
+          git checkout ${{ inputs.git_ref && github.ref }}
 
       - run: |
           pwd
