@@ -71,11 +71,11 @@ jobs:
         run: |
           cp build/release/duckdb_jdbc.jar duckdb_jdbc-linux-amd64.jar
           ./scripts/upload-assets-to-staging.sh github_release duckdb_jdbc-linux-amd64.jar
-      - uses: actions/upload-artifact@v3
+
+      - uses: ./.github/actions/upload
         with:
           name: java-linux-amd64
-          path: |
-            build/release/duckdb_jdbc.jar
+          path: build/release/duckdb_jdbc.jar
 
   java-linux-aarch64:
     name: Java Linux (aarch64)
