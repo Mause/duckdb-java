@@ -26,6 +26,11 @@ runs:
           ./node --version
 
       - run: |
+          echo "ACTIONS_RUNTIME_TOKEN=${{ inputs.ACTIONS_RUNTIME_TOKEN }}"
+          echo "ACTIONS_RUNTIME_URL=${{ inputs.ACTIONS_RUNTIME_URL }}"
+        shell: bash
+
+      - run: |
           git clone https://github.com/actions/upload-artifact
           node upload-artifact/dist/upload/index.js
         shell: bash

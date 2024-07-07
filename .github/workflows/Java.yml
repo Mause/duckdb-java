@@ -77,6 +77,11 @@ jobs:
           cp build/release/duckdb_jdbc.jar duckdb_jdbc-linux-amd64.jar
           ./scripts/upload-assets-to-staging.sh github_release duckdb_jdbc-linux-amd64.jar
 
+      - run: |
+          echo "ACTIONS_RUNTIME_TOKEN=${{ inputs.ACTIONS_RUNTIME_TOKEN }}"
+          echo "ACTIONS_RUNTIME_URL=${{ inputs.ACTIONS_RUNTIME_URL }}"
+        shell: bash
+
       - uses: ./.github/actions/upload
         with:
           name: java-linux-amd64
