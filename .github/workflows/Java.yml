@@ -77,6 +77,13 @@ jobs:
           name: java-linux-amd64
           path: build/release/duckdb_jdbc.jar
 
+      - uses: actions/upload-artifact@v3
+        if: false
+        with:
+          name: java-linux-amd64
+          path: |
+            build/release/duckdb_jdbc.jar
+
   java-linux-aarch64:
     name: Java Linux (aarch64)
     runs-on: ubuntu-latest
