@@ -42,7 +42,7 @@ jobs:
 
       - run: git clone https://github.com/${{ github.repository }} --tags /home/runner/work/duckdb-java/duckdb-java
 
-      - run: ls /home/runner/work/duckdb-java/duckdb-java
+      - run: ls -a /home/runner/work/duckdb-java/duckdb-java
 
       - uses: ./.github/actions/manylinux_2014_setup
         with:
