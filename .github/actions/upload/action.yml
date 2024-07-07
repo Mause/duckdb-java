@@ -25,3 +25,8 @@ runs:
         env:
           INPUT_NAME: ${{ inputs.name }}
           INPUT_PATH: ${{ inputs.path }}
+          INPUT_OVERWRITE: false
+          INPUT_COMPRESSION_LEVEL: 6
+          INPUT_RETENTION_DAYS: 0
+          INPUT_IF_NO_FILES_FOUND: error
+
