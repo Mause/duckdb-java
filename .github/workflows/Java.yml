@@ -43,6 +43,7 @@ jobs:
           git clone https://github.com/${{ github.repository }} --tags .
           git fetch
           git checkout ${{ inputs.git_ref && github.ref }}
+          git status
 
       - run: |
           pwd
