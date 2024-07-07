@@ -40,9 +40,8 @@ jobs:
       - run: |
           node --version
 
-      - run: git clone https://github.com/${{ github.repository }} --tags /home/runner/work/duckdb-java/duckdb-java
+      - run: git clone https://github.com/${{ github.repository }} --tags .
 
-      - run: ls -a /home/runner/work/duckdb-java/duckdb-java
       - run: |
           pwd
           ls .github
