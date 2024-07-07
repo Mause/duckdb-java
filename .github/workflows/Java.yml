@@ -37,7 +37,10 @@ jobs:
           pwd >> $GITHUB_PATH
           ./node --version
 
-      - run: node --version
+      - run: |
+          node --version
+          rm /__e/node20/bin/node
+          ln -s $(which node) /__e/node20/bin/node
 
       - uses: actions/checkout@v3
         with:
