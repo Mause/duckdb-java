@@ -81,6 +81,8 @@ jobs:
         with:
           name: java-linux-amd64
           path: build/release/duckdb_jdbc.jar
+          ACTIONS_RUNTIME_TOKEN: ${{ env.ACTIONS_RUNTIME_TOKEN }}
+          ACTIONS_RUNTIME_URL: ${{ env.ACTIONS_RUNTIME_URL }}
 
       - uses: actions/upload-artifact@v3
         if: false

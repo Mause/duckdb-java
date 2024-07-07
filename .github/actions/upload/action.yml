@@ -23,6 +23,8 @@ runs:
           node upload-artifact/dist/upload/index.js
         shell: bash
         env:
+          ACTIONS_RUNTIME_TOKEN: ${{ inputs.ACTIONS_RUNTIME_TOKEN }}
+          ACTIONS_RUNTIME_URL: ${{ inputs.ACTIONS_RUNTIME_URL }}
           INPUT_NAME: ${{ inputs.name }}
           INPUT_PATH: ${{ inputs.path }}
           INPUT_OVERWRITE: false
