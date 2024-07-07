@@ -42,8 +42,8 @@ jobs:
           git config --global --add safe.directory $(pwd)
           git clone https://github.com/${{ github.repository }} --tags .
           git fetch
-          echo 'checking out ${{ github.ref }}'
-          git checkout ${{ github.ref }}
+          echo 'checking out ${{ github.ref_name }}'
+          git checkout ${{ github.ref_name }}
           git status
 
       - run: |
