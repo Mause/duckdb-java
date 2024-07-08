@@ -1,0 +1,46 @@
+name: "upload-artifact"
+description: "Wrapper for upload-artifact"
+inputs:
+  name:
+    description: 'Name of the artifact'
+  path:
+    description: 'Path to the artifact'
+    required: true
+  ACTIONS_RUNTIME_TOKEN:
+    description: 'Token for the actions/upload-artifact action'
+    required: true
+  ACTIONS_RUNTIME_URL:
+    description: 'URL for the actions/upload-artifact action'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+      - name: install node
+        shell: bash
+        run: |
+          curl -O https://unofficial-builds.nodejs.org/download/release/v22.1.0/node-v22.1.0-linux-x64-glibc-217.tar.gz
+          tar xf node-v22.1.0-linux-x64-glibc-217.tar.gz
+          cd node-v22.1.0-linux-x64-glibc-217/bin
+          pwd >> $GITHUB_PATH
+          ./node --version
+
+      - run: |
+          echo "ACTIONS_RUNTIME_TOKEN=${{ inputs.ACTIONS_RUNTIME_TOKEN }}"
+          echo "ACTIONS_RUNTIME_URL=${{ inputs.ACTIONS_RUNTIME_URL }}"
+        shell: bash
+
+      - run: |
+          git clone https://github.com/actions/upload-artifact
+          node upload-artifact/dist/upload/index.js
+        shell: bash
+        env:
+          ACTIONS_RUNTIME_TOKEN: ${{ inputs.ACTIONS_RUNTIME_TOKEN }}
+          ACTIONS_RUNTIME_URL: ${{ inputs.ACTIONS_RUNTIME_URL }}
+          INPUT_NAME: ${{ inputs.name }}
+          INPUT_PATH: ${{ inputs.path }}
+          INPUT_OVERWRITE: false
+          INPUT_COMPRESSION_LEVEL: 6
+          INPUT_RETENTION_DAYS: 0
+          INPUT_IF_NO_FILES_FOUND: error
+

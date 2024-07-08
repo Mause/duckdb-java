@@ -1,7 +1,6 @@
 name: Java JDBC
 on:
   push:
-  pull_request:
   workflow_dispatch:
   repository_dispatch:
 
@@ -38,7 +37,13 @@ jobs:
           pwd >> $GITHUB_PATH
           ./node --version
 
-      - run: git clone https://github.com/${{ github.repository }} --tags .
+      - run: |
+          git config --global --add safe.directory $(pwd)
+          git clone https://github.com/${{ github.repository }} --tags .
+          git fetch
+          echo 'checking out ${{ github.ref_name }}'
+          git checkout ${{ github.ref_name }}
+          git status
 
       - run: |
           pwd
@@ -71,7 +76,21 @@ jobs:
         run: |
           cp build/release/duckdb_jdbc.jar duckdb_jdbc-linux-amd64.jar
           ./scripts/upload-assets-to-staging.sh github_release duckdb_jdbc-linux-amd64.jar
+
+      - run: |
+          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN }}"
+          echo "ACTIONS_RUNTIME_URL=${{ env.ACTIONS_RUNTIME_URL }}"
+        shell: bash
+
+      - uses: ./.github/actions/upload
+        with:
+          name: java-linux-amd64
+          path: build/release/duckdb_jdbc.jar
+          ACTIONS_RUNTIME_TOKEN: ${{ env.ACTIONS_RUNTIME_TOKEN }}
+          ACTIONS_RUNTIME_URL: ${{ env.ACTIONS_RUNTIME_URL }}
+
       - uses: actions/upload-artifact@v3
+        if: false
         with:
           name: java-linux-amd64
           path: |
