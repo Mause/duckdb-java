@@ -1,7 +1,6 @@
 name: Java JDBC
 on:
   push:
-  pull_request:
   workflow_dispatch:
   repository_dispatch:
 
@@ -30,15 +29,33 @@ jobs:
       GEN: ninja
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: ${{ inputs.git_ref }}
+      - name: install node
+        if: false
+        run: |
+          curl -O https://unofficial-builds.nodejs.org/download/rc/v21.0.0-rc.1/node-v21.0.0-rc.1-linux-x64-glibc-217.tar.gz
+          tar xf node-v21.0.0-rc.1-linux-x64-glibc-217.tar.gz
+          cd node-v21.0.0-rc.1-linux-x64-glibc-217/bin
+          pwd >> $GITHUB_PATH
+          ./node --version
+
+      - run: |
+          git config --global --add safe.directory $(pwd)
+          git clone https://github.com/${{ github.repository }} --tags .
+          git fetch
+          echo 'checking out ${{ github.ref_name }}'
+          git checkout ${{ github.ref_name }}
+          git status
+
+      - run: |
+          pwd
+          ls .github
+          ls .github/actions
+          ls .github/actions/manylinux_2014_setup
 
       - uses: ./.github/actions/manylinux_2014_setup
         with:
           ninja-build: 1
-          ccache: 1
+          ccache: 0
           jdk: 1
           python_alias: 1
           aws-cli: 1
@@ -60,7 +77,21 @@ jobs:
         run: |
           cp build/release/duckdb_jdbc.jar duckdb_jdbc-linux-amd64.jar
           ./scripts/upload-assets-to-staging.sh github_release duckdb_jdbc-linux-amd64.jar
+
+      - run: |
+          echo "ACTIONS_RUNTIME_TOKEN=${{ env.ACTIONS_RUNTIME_TOKEN }}"
+          echo "ACTIONS_RUNTIME_URL=${{ env.ACTIONS_RUNTIME_URL }}"
+        shell: bash
+
+      - uses: ./.github/actions/upload
+        with:
+          name: java-linux-amd64
+          path: build/release/duckdb_jdbc.jar
+          ACTIONS_RUNTIME_TOKEN: ${{ env.ACTIONS_RUNTIME_TOKEN }}
+          ACTIONS_RUNTIME_URL: ${{ env.ACTIONS_RUNTIME_URL }}
+
       - uses: actions/upload-artifact@v3
+        if: false
         with:
           name: java-linux-amd64
           path: |
