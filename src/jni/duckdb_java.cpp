@@ -782,7 +782,7 @@ static std::string type_to_jduckdb_type(LogicalType logical_type) {
 
 static jobject build_meta(JNIEnv *env, size_t column_count, size_t n_param, const duckdb::vector<string> &names,
                           const duckdb::vector<LogicalType> &types, StatementProperties properties,
-                          const case_insensitive_map_t<LogicalType> &parameter_types) {
+                          const case_insensitive_map_t<LogicalType> &param_types) {
 	auto name_array = env->NewObjectArray(column_count, J_String, nullptr);
 	auto type_array = env->NewObjectArray(column_count, J_String, nullptr);
 	auto type_detail_array = env->NewObjectArray(column_count, J_String, nullptr);
@@ -807,7 +807,8 @@ static jobject build_meta(JNIEnv *env, size_t column_count, size_t n_param, cons
 	auto j_param_types = env->NewObjectArray(param_types.size(), J_String, nullptr);
 	idx_t param_idx = 0;
 	for (auto param = param_types.begin(); param != param_types.end(); param++) {
-		env->SetObjectArrayElement(j_param_types, param_idx++, env->NewStringUTF(type_to_jduckdb_type(param->second)));
+		env->SetObjectArrayElement(j_param_types, param_idx++,
+		                           env->NewStringUTF(type_to_jduckdb_type(param->second).c_str()));
 	}
 
 	return env->NewObject(J_DuckResultSetMeta, J_DuckResultSetMeta_init, n_param, column_count, name_array, type_array,
@@ -823,7 +824,7 @@ jobject _duckdb_jdbc_query_result_meta(JNIEnv *env, jclass, jobject res_ref_buf)
 
 	auto n_param = -1; // no params now
 
-	return build_meta(env, result->ColumnCount(), n_param, result->names, result->types, result->properties, nullptr);
+	return build_meta(env, result->ColumnCount(), n_param, result->names, result->types, result->properties, {});
 }
 
 jobject _duckdb_jdbc_prepared_statement_meta(JNIEnv *env, jclass, jobject stmt_ref_buf) {
