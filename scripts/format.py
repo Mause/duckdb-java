@@ -11,7 +11,7 @@ template = ['clang-format', '-i']
 if args.check:
     template += ['--dry-run', '--Werror']
 
-for name in ['src/jni/duckdb_java.cpp'] + glob('src/**/*.java', recursive=True):
+for name in ['src/jni/duckdb_java.cpp'] + glob('src/**/*.java', recursive=True) + glob('duckdb_jdbc_android/src/**/*.java', recursive=True):
     print('Formatting', name)
     check_call(template + [name])
 
