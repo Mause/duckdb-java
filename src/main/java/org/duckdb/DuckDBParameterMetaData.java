@@ -1,5 +1,7 @@
 package org.duckdb;
 
+import static org.duckdb.DuckDBResultSetMetaData.typeToClass;
+
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -38,30 +40,27 @@ public class DuckDBParameterMetaData implements ParameterMetaData {
 
     @Override
     public int getPrecision(int param) throws SQLException {
-        throw new SQLFeatureNotSupportedException("getPrecision");
+        return meta.param_types_meta[param - 1].type_size;
     }
 
     @Override
     public int getScale(int param) throws SQLException {
-        throw new SQLFeatureNotSupportedException("getScale");
+        return meta.param_types_meta[param - 1].scale;
     }
 
     @Override
     public int getParameterType(int param) throws SQLException {
-        // TODO Auto-generated method stub
-        return 0;
+        throw new SQLFeatureNotSupportedException("getParameterType");
     }
 
     @Override
     public String getParameterTypeName(int param) throws SQLException {
-        // TODO Auto-generated method stub
-        return null;
+        return meta.param_types[param - 1].name();
     }
 
     @Override
     public String getParameterClassName(int param) throws SQLException {
-        // TODO Auto-generated method stub
-        return null;
+        return typeToClass(meta.param_types[param - 1]);
     }
 
     @Override
