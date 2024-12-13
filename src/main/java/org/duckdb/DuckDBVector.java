@@ -21,9 +21,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoField;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -278,10 +278,22 @@ class DuckDBVector {
             return null;
         }
         if (isType(DuckDBColumnType.BLOB)) {
-            return new DuckDBResultSet.DuckDBBlobResult((ByteBuffer) varlen_data[idx]);
+            return new DuckDBResultSet.DuckDBBlobResult(ByteBuffer.wrap((byte[]) varlen_data[idx]));
         }
 
         throw new SQLFeatureNotSupportedException("getBlob");
+    }
+
+    byte[] getBytes(int idx) throws SQLException {
+        if (check_and_null(idx)) {
+            return null;
+        }
+
+        if (isType(DuckDBColumnType.BLOB)) {
+            return (byte[]) varlen_data[idx];
+        }
+
+        throw new SQLFeatureNotSupportedException("getBytes");
     }
 
     JsonNode getJsonObject(int idx) {

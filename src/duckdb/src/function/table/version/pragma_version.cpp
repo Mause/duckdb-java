@@ -1,22 +1,22 @@
 #ifndef DUCKDB_PATCH_VERSION
-#define DUCKDB_PATCH_VERSION "0"
+#define DUCKDB_PATCH_VERSION "4-dev3393"
 #endif
 #ifndef DUCKDB_MINOR_VERSION
-#define DUCKDB_MINOR_VERSION 0
+#define DUCKDB_MINOR_VERSION 1
 #endif
 #ifndef DUCKDB_MAJOR_VERSION
 #define DUCKDB_MAJOR_VERSION 1
 #endif
 #ifndef DUCKDB_VERSION
-#define DUCKDB_VERSION "v1.0.0"
+#define DUCKDB_VERSION "v1.1.4-dev3393"
 #endif
 #ifndef DUCKDB_SOURCE_ID
-#define DUCKDB_SOURCE_ID "1f98600c2c"
+#define DUCKDB_SOURCE_ID "bcd65821a9"
 #endif
 #include "duckdb/function/table/system_functions.hpp"
 #include "duckdb/main/database.hpp"
 #include "duckdb/common/string_util.hpp"
-#include "duckdb/common/platform.h"
+#include "duckdb/common/platform.hpp"
 
 #include <cstdint>
 

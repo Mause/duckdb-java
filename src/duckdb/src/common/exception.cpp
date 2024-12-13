@@ -35,9 +35,9 @@ string Exception::ToJSON(ExceptionType type, const string &message, const unorde
 #ifdef DUCKDB_DEBUG_STACKTRACE
 	auto extended_extra_info = extra_info;
 	extended_extra_info["stack_trace"] = Exception::GetStackTrace();
-	return StringUtil::ToJSONMap(type, message, extended_extra_info);
+	return StringUtil::ExceptionToJSONMap(type, message, extended_extra_info);
 #else
-	return StringUtil::ToJSONMap(type, message, extra_info);
+	return StringUtil::ExceptionToJSONMap(type, message, extra_info);
 #endif
 }
 
@@ -160,7 +160,8 @@ static constexpr ExceptionEntry EXCEPTION_MAP[] = {{ExceptionType::INVALID, "Inv
                                                    {ExceptionType::MISSING_EXTENSION, "Missing Extension"},
                                                    {ExceptionType::HTTP, "HTTP"},
                                                    {ExceptionType::AUTOLOAD, "Extension Autoloading"},
-                                                   {ExceptionType::SEQUENCE, "Sequence"}};
+                                                   {ExceptionType::SEQUENCE, "Sequence"},
+                                                   {ExceptionType::INVALID_CONFIGURATION, "Invalid Configuration"}};
 
 string Exception::ExceptionTypeToString(ExceptionType type) {
 	for (auto &e : EXCEPTION_MAP) {
@@ -291,6 +292,9 @@ PermissionException::PermissionException(const string &msg) : Exception(Exceptio
 SyntaxException::SyntaxException(const string &msg) : Exception(ExceptionType::SYNTAX, msg) {
 }
 
+ExecutorException::ExecutorException(const string &msg) : Exception(ExceptionType::EXECUTOR, msg) {
+}
+
 ConstraintException::ConstraintException(const string &msg) : Exception(ExceptionType::CONSTRAINT, msg) {
 }
 
@@ -338,6 +342,15 @@ InvalidInputException::InvalidInputException(const string &msg) : Exception(Exce
 
 InvalidInputException::InvalidInputException(const string &msg, const unordered_map<string, string> &extra_info)
     : Exception(ExceptionType::INVALID_INPUT, msg, extra_info) {
+}
+
+InvalidConfigurationException::InvalidConfigurationException(const string &msg)
+    : Exception(ExceptionType::INVALID_CONFIGURATION, msg) {
+}
+
+InvalidConfigurationException::InvalidConfigurationException(const string &msg,
+                                                             const unordered_map<string, string> &extra_info)
+    : Exception(ExceptionType::INVALID_CONFIGURATION, msg, extra_info) {
 }
 
 OutOfMemoryException::OutOfMemoryException(const string &msg) : Exception(ExceptionType::OUT_OF_MEMORY, msg) {

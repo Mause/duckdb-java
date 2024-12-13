@@ -88,8 +88,8 @@ void ExpressionIterator::EnumerateChildren(Expression &expr,
 	}
 	case ExpressionClass::BOUND_SUBQUERY: {
 		auto &subquery_expr = expr.Cast<BoundSubqueryExpression>();
-		if (subquery_expr.child) {
-			callback(subquery_expr.child);
+		for (auto &child : subquery_expr.children) {
+			callback(child);
 		}
 		break;
 	}
@@ -118,6 +118,9 @@ void ExpressionIterator::EnumerateChildren(Expression &expr,
 		}
 		if (window_expr.default_expr) {
 			callback(window_expr.default_expr);
+		}
+		for (auto &order : window_expr.arg_orders) {
+			callback(order.expression);
 		}
 		break;
 	}
@@ -239,6 +242,21 @@ void BoundNodeVisitor::VisitBoundQueryNode(BoundQueryNode &node) {
 	}
 }
 
+class LogicalBoundNodeVisitor : public LogicalOperatorVisitor {
+public:
+	explicit LogicalBoundNodeVisitor(BoundNodeVisitor &parent) : parent(parent) {
+	}
+
+	void VisitExpression(unique_ptr<Expression> *expression) override {
+		auto &expr = **expression;
+		parent.VisitExpression(*expression);
+		VisitExpressionChildren(expr);
+	}
+
+protected:
+	BoundNodeVisitor &parent;
+};
+
 void BoundNodeVisitor::VisitBoundTableRef(BoundTableRef &ref) {
 	switch (ref.type) {
 	case TableReferenceType::EXPRESSION_LIST: {
@@ -264,7 +282,17 @@ void BoundNodeVisitor::VisitBoundTableRef(BoundTableRef &ref) {
 		VisitBoundQueryNode(*bound_subquery.subquery);
 		break;
 	}
-	case TableReferenceType::TABLE_FUNCTION:
+	case TableReferenceType::TABLE_FUNCTION: {
+		auto &bound_table_function = ref.Cast<BoundTableFunction>();
+		LogicalBoundNodeVisitor node_visitor(*this);
+		if (bound_table_function.get) {
+			node_visitor.VisitOperator(*bound_table_function.get);
+		}
+		if (bound_table_function.subquery) {
+			VisitBoundTableRef(*bound_table_function.subquery);
+		}
+		break;
+	}
 	case TableReferenceType::EMPTY_FROM:
 	case TableReferenceType::BASE_TABLE:
 	case TableReferenceType::CTE:
