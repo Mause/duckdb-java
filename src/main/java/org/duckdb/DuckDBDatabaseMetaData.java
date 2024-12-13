@@ -1,7 +1,6 @@
 package org.duckdb;
 
-import javax.sql.rowset.CachedRowSet;
-import javax.sql.rowset.RowSetProvider;
+import static java.lang.System.lineSeparator;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -15,10 +14,11 @@ import java.sql.Types;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static java.lang.System.lineSeparator;
+import javax.sql.rowset.CachedRowSet;
+import javax.sql.rowset.RowSetProvider;
 
 public class DuckDBDatabaseMetaData implements DatabaseMetaData {
+
     DuckDBConnection conn;
 
     public DuckDBDatabaseMetaData(DuckDBConnection conn) {
@@ -171,32 +171,79 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
 
     @Override
     public String getSQLKeywords() throws SQLException {
-        throw new SQLFeatureNotSupportedException("getSQLKeywords");
+        Statement statement = conn.createStatement();
+        statement.closeOnCompletion();
+        ResultSet rs = statement.executeQuery("SELECT keyword_name FROM duckdb_keywords()");
+        StringBuilder sb = new StringBuilder();
+        while (rs.next()) {
+            sb.append(rs.getString(1));
+            sb.append(',');
+        }
+        return sb.toString();
     }
 
     @Override
     public String getNumericFunctions() throws SQLException {
-        throw new SQLFeatureNotSupportedException("getNumericFunctions");
+        Statement statement = conn.createStatement();
+        statement.closeOnCompletion();
+        ResultSet rs = statement.executeQuery("SELECT DISTINCT function_name FROM duckdb_functions() "
+                                              + "WHERE parameter_types[1] ='DECIMAL'"
+                                              + "OR parameter_types[1] ='DOUBLE'"
+                                              + "OR parameter_types[1] ='SMALLINT'"
+                                              + "OR parameter_types[1] = 'BIGINT'");
+        StringBuilder sb = new StringBuilder();
+        while (rs.next()) {
+            sb.append(rs.getString(1));
+            sb.append(',');
+        }
+        return sb.toString();
     }
 
     @Override
     public String getStringFunctions() throws SQLException {
-        throw new SQLFeatureNotSupportedException("getStringFunctions");
+        Statement statement = conn.createStatement();
+        statement.closeOnCompletion();
+        ResultSet rs = statement.executeQuery(
+            "SELECT DISTINCT function_name FROM duckdb_functions() WHERE parameter_types[1] = 'VARCHAR'");
+        StringBuilder sb = new StringBuilder();
+        while (rs.next()) {
+            sb.append(rs.getString(1));
+            sb.append(',');
+        }
+        return sb.toString();
     }
 
     @Override
     public String getSystemFunctions() throws SQLException {
-        throw new SQLFeatureNotSupportedException("getSystemFunctions");
+        Statement statement = conn.createStatement();
+        statement.closeOnCompletion();
+        ResultSet rs = statement.executeQuery(
+            "SELECT DISTINCT function_name FROM duckdb_functions() WHERE length(parameter_types) = 0");
+        StringBuilder sb = new StringBuilder();
+        while (rs.next()) {
+            sb.append(rs.getString(1));
+            sb.append(',');
+        }
+        return sb.toString();
     }
 
     @Override
     public String getTimeDateFunctions() throws SQLException {
-        throw new SQLFeatureNotSupportedException("getTimeDateFunctions");
+        Statement statement = conn.createStatement();
+        statement.closeOnCompletion();
+        ResultSet rs = statement.executeQuery(
+            "SELECT DISTINCT function_name FROM duckdb_functions() WHERE parameter_types[1] LIKE 'TIME%'");
+        StringBuilder sb = new StringBuilder();
+        while (rs.next()) {
+            sb.append(rs.getString(1));
+            sb.append(',');
+        }
+        return sb.toString();
     }
 
     @Override
     public String getSearchStringEscape() throws SQLException {
-        return null;
+        return "\\";
     }
 
     @Override
@@ -672,7 +719,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
             if (schemaPattern.isEmpty()) {
                 sb.append("schema_name IS NULL");
             } else {
-                sb.append("schema_name LIKE ?");
+                sb.append("schema_name LIKE ? ESCAPE '\\'");
             }
             sb.append(lineSeparator());
         }
@@ -731,14 +778,16 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
         str.append(", NULL::VARCHAR AS 'REF_GENERATION'").append(lineSeparator());
         str.append("FROM information_schema.tables").append(lineSeparator());
 
-        // tableNamePattern - a table name pattern; must match the table name as it is stored in the database
+        // tableNamePattern - a table name pattern; must match the table name as it
+        // is stored in the database
         if (tableNamePattern == null) {
             // non-standard behavior.
             tableNamePattern = "%";
         }
-        str.append("WHERE table_name LIKE ?").append(lineSeparator());
+        str.append("WHERE table_name LIKE ? ESCAPE '\\'").append(lineSeparator());
 
-        // catalog - a catalog name; must match the catalog name as it is stored in the database;
+        // catalog - a catalog name; must match the catalog name as it is stored in
+        // the database;
         // "" retrieves those without a catalog;
         // null means that the catalog name should not be used to narrow the search
         boolean hasCatalogParam = false;
@@ -752,7 +801,8 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
             }
         }
 
-        // schemaPattern - a schema name pattern; must match the schema name as it is stored in the database;
+        // schemaPattern - a schema name pattern; must match the schema name as it
+        // is stored in the database;
         // "" retrieves those without a schema;
         // null means that the schema name should not be used to narrow the search
         boolean hasSchemaParam = false;
@@ -761,7 +811,7 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
             if (schemaPattern.isEmpty()) {
                 str.append("IS NULL").append(lineSeparator());
             } else {
-                str.append("LIKE ?").append(lineSeparator());
+                str.append("LIKE ? ESCAPE '\\'").append(lineSeparator());
                 hasSchemaParam = true;
             }
         }
@@ -825,10 +875,11 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
                                   + "table_catalog AS 'TABLE_CAT', "
                                   + "table_schema AS 'TABLE_SCHEM', "
                                   + "table_name AS 'TABLE_NAME', "
-                                  + "column_name as 'COLUMN_NAME', " + makeDataMap("regexp_replace(c.data_type, '\\(.*\\)', '')", "DATA_TYPE") + ", "
+                                  + "column_name as 'COLUMN_NAME', " +
+                                  makeDataMap("regexp_replace(c.data_type, '\\(.*\\)', '')", "DATA_TYPE") + ", "
                                   + "c.data_type AS 'TYPE_NAME', "
-                                  + "NULL AS 'COLUMN_SIZE', NULL AS 'BUFFER_LENGTH', "
-                                  + "numeric_precision AS 'DECIMAL_DIGITS', "
+                                  + "numeric_precision AS 'COLUMN_SIZE', NULL AS 'BUFFER_LENGTH', "
+                                  + "numeric_scale AS 'DECIMAL_DIGITS', "
                                   + "10 AS 'NUM_PREC_RADIX', "
                                   + "CASE WHEN is_nullable = 'YES' THEN 1 else 0 END AS 'NULLABLE', "
                                   + "COLUMN_COMMENT as 'REMARKS', "
@@ -845,10 +896,10 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
                                   + "'' AS 'IS_AUTOINCREMENT', "
                                   + "'' AS 'IS_GENERATEDCOLUMN' "
                                   + "FROM information_schema.columns c "
-                                  + "WHERE table_catalog LIKE ? AND "
-                                  + "table_schema LIKE ? AND "
-                                  + "table_name LIKE ? AND "
-                                  + "column_name LIKE ? "
+                                  + "WHERE table_catalog LIKE ? ESCAPE '\\' AND "
+                                  + "table_schema LIKE ? ESCAPE '\\' AND "
+                                  + "table_name LIKE ? ESCAPE '\\' AND "
+                                  + "column_name LIKE ? ESCAPE '\\' "
                                   + "ORDER BY \"TABLE_CAT\",\"TABLE_SCHEM\", \"TABLE_NAME\", \"ORDINAL_POSITION\"");
         ps.setString(1, catalogPattern);
         ps.setString(2, schemaPattern);
@@ -979,7 +1030,43 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
     @Override
     public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate)
         throws SQLException {
-        throw new SQLFeatureNotSupportedException("getIndexInfo(");
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT database_name AS TABLE_CAT "
+                  + ", schema_name AS TABLE_SCHEM "
+                  + ", table_name AS TABLE_NAME "
+                  + ", index_name AS INDEX_NAME "
+                  + ", CASE WHEN is_unique THEN 0 ELSE 1 END AS NON_UNIQUE "
+                  + ", NULL AS TYPE "
+                  + ", NULL AS ORDINAL_POSITION "
+                  + ", NULL AS COLUMN_NAME "
+                  + ", NULL AS ASC_OR_DESC "
+                  + ", NULL AS CARDINALITY "
+                  + ", NULL AS PAGES "
+                  + ", NULL AS FILTER_CONDITION "
+                  + "FROM duckdb_indexes() WHERE TRUE ");
+        if (catalog != null) {
+            sb.append(" AND database_name = ?");
+        }
+        if (schema != null) {
+            sb.append(" AND schema_name = ?");
+        }
+        if (table != null) {
+            sb.append(" AND table_name = ?");
+        }
+        sb.append(" ORDER BY TABLE_CAT, TABLE_SCHEM, TABLE_NAME, NON_UNIQUE, INDEX_NAME, ORDINAL_POSITION");
+        PreparedStatement ps = conn.prepareStatement(sb.toString());
+        int paramIndex = 1;
+        if (catalog != null) {
+            ps.setString(paramIndex++, catalog);
+        }
+        if (schema != null) {
+            ps.setString(paramIndex++, schema);
+        }
+        if (table != null) {
+            ps.setString(paramIndex++, table);
+        }
+        ps.closeOnCompletion();
+        return ps.executeQuery();
     }
 
     @Override
@@ -1158,25 +1245,26 @@ public class DuckDBDatabaseMetaData implements DatabaseMetaData {
      *
      * @param catalog a catalog name; must match the catalog name as it
      *        is stored in the database; "" retrieves those without a catalog;
-     *        <code>null</code> means that the catalog name should not be used to narrow
-     *        the search
+     *        <code>null</code> means that the catalog name should not be used to
+     * narrow the search
      * @param schemaPattern a schema name pattern; must match the schema name
-     *        as it is stored in the database; "" retrieves those without a schema;
-     *        <code>null</code> means that the schema name should not be used to narrow
-     *        the search
+     *        as it is stored in the database; "" retrieves those without a
+     * schema; <code>null</code> means that the schema name should not be used to
+     * narrow the search
      * @param functionNamePattern a function name pattern; must match the
      *        function name as it is stored in the database
      * FUNCTION_CAT String => function catalog (may be null)
      * FUNCTION_SCHEM String => function schema (may be null)
-     * FUNCTION_NAME String => function name. This is the name used to invoke the function
-     * REMARKS String => explanatory comment on the function
+     * FUNCTION_NAME String => function name. This is the name used to invoke the
+     * function REMARKS String => explanatory comment on the function
      * FUNCTION_TYPE short => kind of function:
-     *  - functionResultUnknown - Cannot determine if a return value or table will be returned
+     *  - functionResultUnknown - Cannot determine if a return value or table will
+     * be returned
      *  - functionNoTable- Does not return a table
      *  - functionReturnsTable - Returns a table
-     * SPECIFIC_NAME String => the name which uniquely identifies this function within its schema. This is a user
-     * specified, or DBMS generated, name that may be different then the FUNCTION_NAME for example with overload
-     * functions
+     * SPECIFIC_NAME String => the name which uniquely identifies this function
+     * within its schema. This is a user specified, or DBMS generated, name that
+     * may be different then the FUNCTION_NAME for example with overload functions
      */
     @Override
     public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)

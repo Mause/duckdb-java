@@ -1,8 +1,8 @@
 package org.duckdb;
 
-import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -28,15 +28,14 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DuckDBPreparedStatement implements PreparedStatement {
     private static Logger logger = Logger.getLogger(DuckDBPreparedStatement.class.getName());
@@ -125,6 +124,10 @@ public class DuckDBPreparedStatement implements PreparedStatement {
 
     @Override
     public boolean execute() throws SQLException {
+        return execute(true);
+    }
+
+    private boolean execute(boolean startTransaction) throws SQLException {
         if (isClosed()) {
             throw new SQLException("Statement was closed");
         }
@@ -139,7 +142,9 @@ public class DuckDBPreparedStatement implements PreparedStatement {
         select_result = null;
 
         try {
-            startTransaction();
+            if (startTransaction) {
+                startTransaction();
+            }
             result_ref = DuckDBNative.duckdb_jdbc_execute(stmt_ref, params);
             DuckDBResultSetMetaData result_meta = DuckDBNative.duckdb_jdbc_query_result_meta(result_ref);
             select_result = new DuckDBResultSet(this, result_meta, result_ref, conn.conn_ref);
@@ -477,9 +482,11 @@ public class DuckDBPreparedStatement implements PreparedStatement {
 
     private int[] executeBatchedPreparedStatement() throws SQLException {
         int[] updateCounts = new int[this.batchedParams.size()];
+
+        startTransaction();
         for (int i = 0; i < this.batchedParams.size(); i++) {
             params = this.batchedParams.get(i);
-            execute();
+            execute(false);
             updateCounts[i] = getUpdateCount();
         }
         return updateCounts;
@@ -487,9 +494,11 @@ public class DuckDBPreparedStatement implements PreparedStatement {
 
     private int[] executeBatchedStatements() throws SQLException {
         int[] updateCounts = new int[this.batchedStatements.size()];
+
+        startTransaction();
         for (int i = 0; i < this.batchedStatements.size(); i++) {
             prepare(this.batchedStatements.get(i));
-            execute();
+            execute(false);
             updateCounts[i] = getUpdateCount();
         }
         return updateCounts;

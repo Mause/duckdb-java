@@ -1,14 +1,15 @@
 package org.duckdb;
 
-import java.sql.Timestamp;
-import java.sql.Time;
 import java.sql.Date;
-import java.time.ZoneOffset;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 public class DuckDBTimestamp {
@@ -108,6 +109,8 @@ public class DuckDBTimestamp {
             x = new DuckDBTimestamp((Timestamp) x);
         } else if (x instanceof LocalDateTime) {
             x = new DuckDBTimestamp((LocalDateTime) x);
+        } else if (x instanceof LocalDate) {
+            x = new DuckDBDate(Date.valueOf((LocalDate) x));
         } else if (x instanceof OffsetDateTime) {
             x = new DuckDBTimestampTZ((OffsetDateTime) x);
         } else if (x instanceof Date) {

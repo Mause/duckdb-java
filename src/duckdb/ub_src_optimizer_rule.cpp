@@ -10,6 +10,8 @@
 
 #include "src/optimizer/rule/date_part_simplification.cpp"
 
+#include "src/optimizer/rule/distinct_aggregate_optimizer.cpp"
+
 #include "src/optimizer/rule/distributivity.cpp"
 
 #include "src/optimizer/rule/empty_needle_removal.cpp"
@@ -19,6 +21,8 @@
 #include "src/optimizer/rule/equal_or_null_simplification.cpp"
 
 #include "src/optimizer/rule/in_clause_simplification_rule.cpp"
+
+#include "src/optimizer/rule/join_dependent_filter.cpp"
 
 #include "src/optimizer/rule/like_optimizations.cpp"
 
