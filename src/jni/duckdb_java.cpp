@@ -838,14 +838,14 @@ jobject _duckdb_jdbc_prepared_statement_meta(JNIEnv *env, jclass, jobject stmt_r
 	auto &stmt = stmt_ref->stmt;
 	auto n_param = stmt->named_param_map.size();
 
-	duckdb::vector<duckdb::LogicalType> parameter_types(stmt->n_param);
+	duckdb::vector<duckdb::LogicalType> parameter_types(n_param);
 	const auto &param_types = stmt->GetExpectedParameterTypes();
 	int i = 0;
 	for (auto iter = param_types.begin(); iter != param_types.end(); iter++) {
 		std::cout << iter->first << " -> " << iter->second.ToString() << std::endl;
 	}
 
-	return build_meta(env, stmt->ColumnCount(), stmt->n_param, stmt->GetNames(), stmt->GetTypes(),
+	return build_meta(env, stmt->ColumnCount(), n_param, stmt->GetNames(), stmt->GetTypes(),
 	                  stmt->GetStatementProperties(), stmt->GetExpectedParameterTypes());
 }
 
