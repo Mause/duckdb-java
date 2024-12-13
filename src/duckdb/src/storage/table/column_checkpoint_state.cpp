@@ -112,7 +112,12 @@ void PartialBlockForCheckpoint::Clear() {
 	segments.clear();
 }
 
-void ColumnCheckpointState::FlushSegment(unique_ptr<ColumnSegment> segment, idx_t segment_size) {
+void ColumnCheckpointState::FlushSegment(unique_ptr<ColumnSegment> segment, BufferHandle handle, idx_t segment_size) {
+	handle.Destroy();
+	FlushSegmentInternal(std::move(segment), segment_size);
+}
+
+void ColumnCheckpointState::FlushSegmentInternal(unique_ptr<ColumnSegment> segment, idx_t segment_size) {
 	auto block_size = partial_block_manager.GetBlockManager().GetBlockSize();
 	D_ASSERT(segment_size <= block_size);
 
@@ -194,8 +199,10 @@ void ColumnCheckpointState::FlushSegment(unique_ptr<ColumnSegment> segment, idx_
 	data_pointers.push_back(std::move(data_pointer));
 }
 
-void ColumnCheckpointState::WriteDataPointers(RowGroupWriter &writer, Serializer &serializer) {
-	writer.WriteColumnDataPointers(*this, serializer);
+PersistentColumnData ColumnCheckpointState::ToPersistentData() {
+	PersistentColumnData data(column_data.type.InternalType());
+	data.pointers = std::move(data_pointers);
+	return data;
 }
 
 } // namespace duckdb

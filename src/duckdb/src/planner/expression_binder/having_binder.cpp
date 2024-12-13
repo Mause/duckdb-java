@@ -1,6 +1,7 @@
 #include "duckdb/planner/expression_binder/having_binder.hpp"
 
 #include "duckdb/parser/expression/columnref_expression.hpp"
+#include "duckdb/parser/expression/window_expression.hpp"
 #include "duckdb/planner/binder.hpp"
 #include "duckdb/planner/expression_binder/aggregate_binder.hpp"
 #include "duckdb/common/string_util.hpp"
@@ -19,6 +20,22 @@ BindResult HavingBinder::BindLambdaReference(LambdaRefExpression &expr, idx_t de
 	D_ASSERT(lambda_bindings && expr.lambda_idx < lambda_bindings->size());
 	auto &lambda_ref = expr.Cast<LambdaRefExpression>();
 	return (*lambda_bindings)[expr.lambda_idx].Bind(lambda_ref, depth);
+}
+
+unique_ptr<ParsedExpression> HavingBinder::QualifyColumnName(ColumnRefExpression &colref, ErrorData &error) {
+	auto qualified_colref = ExpressionBinder::QualifyColumnName(colref, error);
+	if (!qualified_colref) {
+		return nullptr;
+	}
+
+	auto group_index = TryBindGroup(*qualified_colref);
+	if (group_index != DConstants::INVALID_INDEX) {
+		return qualified_colref;
+	}
+	if (column_alias_binder.QualifyColumnAlias(colref)) {
+		return nullptr;
+	}
+	return qualified_colref;
 }
 
 BindResult HavingBinder::BindColumnRef(unique_ptr<ParsedExpression> &expr_ptr, idx_t depth, bool root_expression) {
@@ -74,7 +91,7 @@ BindResult HavingBinder::BindColumnRef(unique_ptr<ParsedExpression> &expr_ptr, i
 }
 
 BindResult HavingBinder::BindWindow(WindowExpression &expr, idx_t depth) {
-	return BindResult("HAVING clause cannot contain window functions!");
+	return BindResult(BinderException::Unsupported(expr, "HAVING clause cannot contain window functions!"));
 }
 
 } // namespace duckdb

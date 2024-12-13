@@ -176,6 +176,24 @@ string TableCatalogEntry::ColumnsToSQL(const ColumnList &columns, const vector<u
 	return ss.str();
 }
 
+string TableCatalogEntry::ColumnNamesToSQL(const ColumnList &columns) {
+	if (columns.empty()) {
+		return "";
+	}
+
+	std::stringstream ss;
+	ss << "(";
+
+	for (auto &column : columns.Logical()) {
+		if (column.Oid() > 0) {
+			ss << ", ";
+		}
+		ss << KeywordHelper::WriteOptionallyQuoted(column.Name()) << " ";
+	}
+	ss << ")";
+	return ss.str();
+}
+
 string TableCatalogEntry::ToSQL() const {
 	auto create_info = GetInfo();
 	return create_info->ToString();
@@ -226,8 +244,8 @@ static void BindExtraColumns(TableCatalogEntry &table, LogicalGet &get, LogicalP
 			update.expressions.push_back(make_uniq<BoundColumnRefExpression>(
 			    column.Type(), ColumnBinding(proj.table_index, proj.expressions.size())));
 			proj.expressions.push_back(make_uniq<BoundColumnRefExpression>(
-			    column.Type(), ColumnBinding(get.table_index, get.column_ids.size())));
-			get.column_ids.push_back(check_column_id.index);
+			    column.Type(), ColumnBinding(get.table_index, get.GetColumnIds().size())));
+			get.AddColumnId(check_column_id.index);
 			update.columns.push_back(check_column_id);
 		}
 	}
@@ -314,6 +332,22 @@ void TableCatalogEntry::BindUpdateConstraints(Binder &binder, LogicalGet &get, L
 		}
 		BindExtraColumns(*this, get, proj, update, all_columns);
 	}
+}
+
+optional_ptr<Constraint> TableCatalogEntry::GetPrimaryKey() const {
+	for (const auto &constraint : GetConstraints()) {
+		if (constraint->type == ConstraintType::UNIQUE) {
+			auto &unique = constraint->Cast<UniqueConstraint>();
+			if (unique.IsPrimaryKey()) {
+				return &unique;
+			}
+		}
+	}
+	return nullptr;
+}
+
+bool TableCatalogEntry::HasPrimaryKey() const {
+	return GetPrimaryKey() != nullptr;
 }
 
 } // namespace duckdb

@@ -217,7 +217,7 @@ public:
 
 	template <class T_INNER>
 	void SubtractFrameOfReference(T_INNER *buffer, T_INNER frame_of_reference) {
-		static_assert(IsIntegral<T_INNER>::value, "Integral type required.");
+		static_assert(NumericLimits<T_INNER>::IsIntegral(), "Integral type required.");
 
 		using T_U = typename MakeUnsigned<T_INNER>::type;
 
@@ -264,10 +264,14 @@ public:
 				                  delta_required_bitwidth, static_cast<T>(minimum_delta), delta_offset,
 				                  compression_buffer, compression_buffer_idx, data_ptr);
 
+				// FOR (frame of reference).
+				total_size += sizeof(T);
+				// Aligned bitpacking width.
+				total_size += AlignValue(sizeof(bitpacking_width_t));
+				// Delta offset.
+				total_size += sizeof(T);
+				// Compressed data size.
 				total_size += BitpackingPrimitives::GetRequiredSize(compression_buffer_idx, delta_required_bitwidth);
-				total_size += sizeof(T);                              // FOR value
-				total_size += sizeof(T);                              // Delta offset value
-				total_size += AlignValue(sizeof(bitpacking_width_t)); // FOR value
 
 				return true;
 			}
@@ -476,8 +480,8 @@ public:
 			state->current_segment->count += count;
 
 			if (WRITE_STATISTICS && !state->state.all_invalid) {
-				NumericStats::Update<T>(state->current_segment->stats.statistics, state->state.minimum);
-				NumericStats::Update<T>(state->current_segment->stats.statistics, state->state.maximum);
+				state->current_segment->stats.statistics.template UpdateNumericStats<T>(state->state.maximum);
+				state->current_segment->stats.statistics.template UpdateNumericStats<T>(state->state.minimum);
 			}
 		}
 	};
@@ -494,8 +498,8 @@ public:
 		auto &db = checkpointer.GetDatabase();
 		auto &type = checkpointer.GetType();
 
-		auto compressed_segment =
-		    ColumnSegment::CreateTransientSegment(db, type, row_start, info.GetBlockSize(), info.GetBlockSize());
+		auto compressed_segment = ColumnSegment::CreateTransientSegment(db, function, type, row_start,
+		                                                                info.GetBlockSize(), info.GetBlockSize());
 		compressed_segment->function = function;
 		current_segment = std::move(compressed_segment);
 
@@ -548,9 +552,8 @@ public:
 
 		// Store the offset of the metadata of the first group (which is at the highest address).
 		Store<idx_t>(metadata_offset + metadata_size, base_ptr);
-		handle.Destroy();
 
-		state.FlushSegment(std::move(current_segment), total_segment_size);
+		state.FlushSegment(std::move(current_segment), std::move(handle), total_segment_size);
 	}
 
 	void Finalize() {

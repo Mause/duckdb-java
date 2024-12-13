@@ -603,7 +603,7 @@ Value ToValue(JNIEnv *env, jobject param, duckdb::shared_ptr<ClientContext> cont
 	} else if (env->IsInstanceOf(param, J_Long)) {
 		return (Value::BIGINT(env->CallLongMethod(param, J_Long_longValue)));
 	} else if (env->IsInstanceOf(param, J_TimestampTZ)) { // Check for subclass before superclass!
-		return (Value::TIMESTAMPTZ((timestamp_t)env->CallLongMethod(param, J_TimestampTZ_getMicrosEpoch)));
+		return (Value::TIMESTAMPTZ((timestamp_tz_t)env->CallLongMethod(param, J_TimestampTZ_getMicrosEpoch)));
 	} else if (env->IsInstanceOf(param, J_DuckDBDate)) {
 		return (Value::DATE((date_t)env->CallLongMethod(param, J_DuckDBDate_getDaysSinceEpoch)));
 
@@ -703,7 +703,8 @@ jobject _duckdb_jdbc_execute(JNIEnv *env, jclass, jobject stmt_ref_buf, jobjectA
 	duckdb::vector<Value> duckdb_params;
 
 	idx_t param_len = env->GetArrayLength(params);
-	if (param_len != stmt_ref->stmt->n_param) {
+
+	if (param_len != stmt_ref->stmt->named_param_map.size()) {
 		throw InvalidInputException("Parameter count mismatch");
 	}
 
@@ -835,6 +836,7 @@ jobject _duckdb_jdbc_prepared_statement_meta(JNIEnv *env, jclass, jobject stmt_r
 	}
 
 	auto &stmt = stmt_ref->stmt;
+	auto n_param = stmt->named_param_map.size();
 
 	duckdb::vector<duckdb::LogicalType> parameter_types(stmt->n_param);
 	const auto &param_types = stmt->GetExpectedParameterTypes();
@@ -1007,15 +1009,20 @@ jobject ProcessVector(JNIEnv *env, Connection *conn_ref, Vector &vec, idx_t row_
 		break;
 	}
 	case LogicalTypeId::BLOB:
-		varlen_data = env->NewObjectArray(row_count, J_ByteBuffer, nullptr);
+		varlen_data = env->NewObjectArray(row_count, J_ByteArray, nullptr);
 
 		for (idx_t row_idx = 0; row_idx < row_count; row_idx++) {
 			if (FlatVector::IsNull(vec, row_idx)) {
 				continue;
 			}
 			auto &d_str = ((string_t *)FlatVector::GetData(vec))[row_idx];
-			auto j_obj = env->NewDirectByteBuffer((void *)d_str.GetData(), d_str.GetSize());
-			env->SetObjectArrayElement(varlen_data, row_idx, j_obj);
+
+			auto j_arr = env->NewByteArray(d_str.GetSize());
+			auto j_arr_el = env->GetByteArrayElements(j_arr, nullptr);
+			memcpy((void *)j_arr_el, (void *)d_str.GetData(), d_str.GetSize());
+			env->ReleaseByteArrayElements(j_arr, j_arr_el, 0);
+
+			env->SetObjectArrayElement(varlen_data, row_idx, j_arr);
 		}
 		break;
 	case LogicalTypeId::UUID:
@@ -1180,6 +1187,16 @@ void _duckdb_jdbc_appender_append_string(JNIEnv *env, jclass, jobject appender_r
 
 	auto string_value = byte_array_to_string(env, value);
 	get_appender(env, appender_ref_buf)->Append(string_value.c_str());
+}
+
+void _duckdb_jdbc_appender_append_bytes(JNIEnv *env, jclass, jobject appender_ref_buf, jbyteArray value) {
+	if (env->IsSameObject(value, NULL)) {
+		get_appender(env, appender_ref_buf)->Append<std::nullptr_t>(nullptr);
+		return;
+	}
+
+	auto string_value = byte_array_to_string(env, value);
+	get_appender(env, appender_ref_buf)->Append(Value::BLOB_RAW(string_value));
 }
 
 void _duckdb_jdbc_appender_append_null(JNIEnv *env, jclass, jobject appender_ref_buf) {

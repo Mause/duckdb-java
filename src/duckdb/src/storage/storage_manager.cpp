@@ -13,8 +13,9 @@
 #include "duckdb/storage/object_cache.hpp"
 #include "duckdb/storage/single_file_block_manager.hpp"
 #include "duckdb/transaction/transaction_manager.hpp"
-
+#include "duckdb/common/serializer/memory_stream.hpp"
 #include "duckdb/storage/storage_extension.hpp"
+#include "duckdb/storage/table/column_data.hpp"
 
 namespace duckdb {
 
@@ -55,41 +56,28 @@ ObjectCache &ObjectCache::GetObjectCache(ClientContext &context) {
 	return context.db->GetObjectCache();
 }
 
-bool ObjectCache::ObjectCacheEnabled(ClientContext &context) {
-	return context.db->config.options.object_cache_enable;
-}
-
 idx_t StorageManager::GetWALSize() {
-	auto wal_ptr = GetWAL();
-	if (!wal_ptr) {
-		return 0;
-	}
-	return wal_ptr->GetWALSize();
+	return wal->GetWALSize();
 }
 
 optional_ptr<WriteAheadLog> StorageManager::GetWAL() {
 	if (InMemory() || read_only || !load_complete) {
 		return nullptr;
 	}
-
-	if (!wal) {
-		auto wal_path = GetWALPath();
-		wal = make_uniq<WriteAheadLog>(db, wal_path);
-	}
 	return wal.get();
 }
 
 void StorageManager::ResetWAL() {
-	auto wal_ptr = GetWAL();
-	if (wal_ptr) {
-		wal_ptr->Delete();
-	}
-	wal.reset();
+	wal->Delete();
 }
 
 string StorageManager::GetWALPath() {
-
-	std::size_t question_mark_pos = path.find('?');
+	// we append the ".wal" **before** a question mark in case of GET parameters
+	// but only if we are not in a windows long path (which starts with \\?\)
+	std::size_t question_mark_pos = std::string::npos;
+	if (!StringUtil::StartsWith(path, "\\\\?\\")) {
+		question_mark_pos = path.find('?');
+	}
 	auto wal_path = path;
 	if (question_mark_pos != std::string::npos) {
 		wal_path.insert(question_mark_pos, ".wal");
@@ -104,23 +92,25 @@ bool StorageManager::InMemory() {
 	return path == IN_MEMORY_PATH;
 }
 
-void StorageManager::Initialize(const optional_idx block_alloc_size) {
+void StorageManager::Initialize(StorageOptions options) {
 	bool in_memory = InMemory();
 	if (in_memory && read_only) {
 		throw CatalogException("Cannot launch in-memory database in read-only mode!");
 	}
 
 	// Create or load the database from disk, if not in-memory mode.
-	LoadDatabase(block_alloc_size);
+	LoadDatabase(options);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 class SingleFileTableIOManager : public TableIOManager {
 public:
-	explicit SingleFileTableIOManager(BlockManager &block_manager) : block_manager(block_manager) {
+	explicit SingleFileTableIOManager(BlockManager &block_manager, idx_t row_group_size)
+	    : block_manager(block_manager), row_group_size(row_group_size) {
 	}
 
 	BlockManager &block_manager;
+	idx_t row_group_size;
 
 public:
 	BlockManager &GetIndexBlockManager() override {
@@ -132,32 +122,43 @@ public:
 	MetadataManager &GetMetadataManager() override {
 		return block_manager.GetMetadataManager();
 	}
+	idx_t GetRowGroupSize() const override {
+		return row_group_size;
+	}
 };
 
 SingleFileStorageManager::SingleFileStorageManager(AttachedDatabase &db, string path, bool read_only)
     : StorageManager(db, std::move(path), read_only) {
 }
 
-void SingleFileStorageManager::LoadDatabase(const optional_idx block_alloc_size) {
+void SingleFileStorageManager::LoadDatabase(StorageOptions storage_options) {
 	if (InMemory()) {
 		block_manager = make_uniq<InMemoryBlockManager>(BufferManager::GetBufferManager(db), DEFAULT_BLOCK_ALLOC_SIZE);
-		table_io_manager = make_uniq<SingleFileTableIOManager>(*block_manager);
+		table_io_manager = make_uniq<SingleFileTableIOManager>(*block_manager, DEFAULT_ROW_GROUP_SIZE);
 		return;
 	}
 
 	auto &fs = FileSystem::Get(db);
 	auto &config = DBConfig::Get(db);
-	if (!config.options.enable_external_access) {
-		if (!db.IsInitialDatabase()) {
-			throw PermissionException("Attaching on-disk databases is disabled through configuration");
-		}
-	}
 
 	StorageManagerOptions options;
 	options.read_only = read_only;
 	options.use_direct_io = config.options.use_direct_io;
 	options.debug_initialize = config.options.debug_initialize;
 
+	idx_t row_group_size = DEFAULT_ROW_GROUP_SIZE;
+	if (storage_options.row_group_size.IsValid()) {
+		row_group_size = storage_options.row_group_size.GetIndex();
+		if (row_group_size == 0) {
+			throw NotImplementedException("Invalid row group size: %llu - row group size must be bigger than 0",
+			                              row_group_size);
+		}
+		if (row_group_size % STANDARD_VECTOR_SIZE != 0) {
+			throw NotImplementedException(
+			    "Invalid row group size: %llu - row group size must be divisible by the vector size (%llu)",
+			    row_group_size, STANDARD_VECTOR_SIZE);
+		}
+	}
 	// Check if the database file already exists.
 	// Note: a file can also exist if there was a ROLLBACK on a previous transaction creating that file.
 	if (!read_only && !fs.FileExists(path)) {
@@ -173,9 +174,10 @@ void SingleFileStorageManager::LoadDatabase(const optional_idx block_alloc_size)
 		}
 
 		// Set the block allocation size for the new database file.
-		if (block_alloc_size.IsValid()) {
+		if (storage_options.block_alloc_size.IsValid()) {
 			// Use the option provided by the user.
-			options.block_alloc_size = block_alloc_size;
+			Storage::VerifyBlockAllocSize(storage_options.block_alloc_size.GetIndex());
+			options.block_alloc_size = storage_options.block_alloc_size;
 		} else {
 			// No explicit option provided: use the default option.
 			options.block_alloc_size = config.options.default_block_alloc_size;
@@ -185,8 +187,8 @@ void SingleFileStorageManager::LoadDatabase(const optional_idx block_alloc_size)
 		auto sf_block_manager = make_uniq<SingleFileBlockManager>(db, path, options);
 		sf_block_manager->CreateNewDatabase();
 		block_manager = std::move(sf_block_manager);
-		table_io_manager = make_uniq<SingleFileTableIOManager>(*block_manager);
-
+		table_io_manager = make_uniq<SingleFileTableIOManager>(*block_manager, row_group_size);
+		wal = make_uniq<WriteAheadLog>(db, wal_path);
 	} else {
 		// Either the file exists, or we are in read-only mode, so we
 		// try to read the existing file on disk.
@@ -197,27 +199,24 @@ void SingleFileStorageManager::LoadDatabase(const optional_idx block_alloc_size)
 		auto sf_block_manager = make_uniq<SingleFileBlockManager>(db, path, options);
 		sf_block_manager->LoadExistingDatabase();
 		block_manager = std::move(sf_block_manager);
-		table_io_manager = make_uniq<SingleFileTableIOManager>(*block_manager);
+		table_io_manager = make_uniq<SingleFileTableIOManager>(*block_manager, row_group_size);
 
-		if (block_alloc_size.IsValid() && block_alloc_size.GetIndex() != block_manager->GetBlockAllocSize()) {
-			throw InvalidInputException(
-			    "block size parameter does not match the file's block size, got %llu, expected %llu",
-			    block_alloc_size.GetIndex(), block_manager->GetBlockAllocSize());
+		if (storage_options.block_alloc_size.IsValid()) {
+			// user-provided block alloc size
+			idx_t block_alloc_size = storage_options.block_alloc_size.GetIndex();
+			if (block_alloc_size != block_manager->GetBlockAllocSize()) {
+				throw InvalidInputException(
+				    "block size parameter does not match the file's block size, got %llu, expected %llu",
+				    storage_options.block_alloc_size.GetIndex(), block_manager->GetBlockAllocSize());
+			}
 		}
 
 		// load the db from storage
 		auto checkpoint_reader = SingleFileCheckpointReader(*this);
 		checkpoint_reader.LoadFromStorage();
 
-		// check if the WAL file exists
 		auto wal_path = GetWALPath();
-		auto handle = fs.OpenFile(wal_path, FileFlags::FILE_FLAGS_READ | FileFlags::FILE_FLAGS_NULL_IF_NOT_EXISTS);
-		if (handle) {
-			// replay the WAL
-			if (WriteAheadLog::Replay(db, std::move(handle))) {
-				fs.RemoveFile(wal_path);
-			}
-		}
+		wal = WriteAheadLog::Replay(fs, db, wal_path);
 	}
 
 	load_complete = true;
@@ -226,6 +225,16 @@ void SingleFileStorageManager::LoadDatabase(const optional_idx block_alloc_size)
 ///////////////////////////////////////////////////////////////////////////////
 
 enum class WALCommitState { IN_PROGRESS, FLUSHED, TRUNCATED };
+
+struct OptimisticallyWrittenRowGroupData {
+	OptimisticallyWrittenRowGroupData(idx_t start, idx_t count, unique_ptr<PersistentCollectionData> row_group_data_p)
+	    : start(start), count(count), row_group_data(std::move(row_group_data_p)) {
+	}
+
+	idx_t start;
+	idx_t count;
+	unique_ptr<PersistentCollectionData> row_group_data;
+};
 
 class SingleFileStorageCommitState : public StorageCommitState {
 public:
@@ -237,11 +246,17 @@ public:
 	// Make the commit persistent
 	void FlushCommit() override;
 
+	void AddRowGroupData(DataTable &table, idx_t start_index, idx_t count,
+	                     unique_ptr<PersistentCollectionData> row_group_data) override;
+	optional_ptr<PersistentCollectionData> GetRowGroupData(DataTable &table, idx_t start_index, idx_t &count) override;
+	bool HasRowGroupData() override;
+
 private:
 	idx_t initial_wal_size = 0;
 	idx_t initial_written = 0;
 	WriteAheadLog &wal;
 	WALCommitState state;
+	reference_map_t<DataTable, unordered_map<idx_t, OptimisticallyWrittenRowGroupData>> optimistically_written_data;
 };
 
 SingleFileStorageCommitState::SingleFileStorageCommitState(StorageManager &storage, WriteAheadLog &wal)
@@ -281,6 +296,46 @@ void SingleFileStorageCommitState::FlushCommit() {
 	state = WALCommitState::FLUSHED;
 }
 
+void SingleFileStorageCommitState::AddRowGroupData(DataTable &table, idx_t start_index, idx_t count,
+                                                   unique_ptr<PersistentCollectionData> row_group_data) {
+	if (row_group_data->HasUpdates()) {
+		// cannot serialize optimistic block pointers if in-memory updates exist
+		return;
+	}
+	if (table.HasIndexes()) {
+		// cannot serialize optimistic block pointers if the table has indexes
+		return;
+	}
+	auto &entries = optimistically_written_data[table];
+	auto entry = entries.find(start_index);
+	if (entry != entries.end()) {
+		throw InternalException("FIXME: AddOptimisticallyWrittenRowGroup is writing a duplicate row group");
+	}
+	entries.insert(
+	    make_pair(start_index, OptimisticallyWrittenRowGroupData(start_index, count, std::move(row_group_data))));
+}
+
+optional_ptr<PersistentCollectionData> SingleFileStorageCommitState::GetRowGroupData(DataTable &table,
+                                                                                     idx_t start_index, idx_t &count) {
+	auto entry = optimistically_written_data.find(table);
+	if (entry == optimistically_written_data.end()) {
+		// no data for this table
+		return nullptr;
+	}
+	auto &row_groups = entry->second;
+	auto start_entry = row_groups.find(start_index);
+	if (start_entry == row_groups.end()) {
+		// this row group was not optimistically written
+		return nullptr;
+	}
+	count = start_entry->second.count;
+	return start_entry->second.row_group_data.get();
+}
+
+bool SingleFileStorageCommitState::HasRowGroupData() {
+	return !optimistically_written_data.empty();
+}
+
 unique_ptr<StorageCommitState> SingleFileStorageManager::GenStorageCommitState(WriteAheadLog &wal) {
 	return make_uniq<SingleFileStorageCommitState>(*this, wal);
 }
@@ -297,7 +352,7 @@ void SingleFileStorageManager::CreateCheckpoint(CheckpointOptions options) {
 		db.GetStorageExtension()->OnCheckpointStart(db, options);
 	}
 	auto &config = DBConfig::Get(db);
-	if (GetWALSize() > 0 || config.options.force_checkpoint || options.action == CheckpointAction::FORCE_CHECKPOINT) {
+	if (GetWALSize() > 0 || config.options.force_checkpoint || options.action == CheckpointAction::ALWAYS_CHECKPOINT) {
 		// we only need to checkpoint if there is anything in the WAL
 		try {
 			SingleFileCheckpointWriter checkpointer(db, *block_manager, options.type);
@@ -345,6 +400,10 @@ shared_ptr<TableIOManager> SingleFileStorageManager::GetTableIOManager(BoundCrea
 	// This is an unmanaged reference. No ref/deref overhead. Lifetime of the
 	// TableIoManager follows lifetime of the StorageManager (this).
 	return shared_ptr<TableIOManager>(shared_ptr<char>(nullptr), table_io_manager.get());
+}
+
+BlockManager &SingleFileStorageManager::GetBlockManager() {
+	return *block_manager;
 }
 
 } // namespace duckdb

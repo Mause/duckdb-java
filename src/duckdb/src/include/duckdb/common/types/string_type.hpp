@@ -13,6 +13,7 @@
 #include "duckdb/common/helper.hpp"
 #include "duckdb/common/numeric_utils.hpp"
 #include "duckdb/common/limits.hpp"
+#include "duckdb/common/types/hash.hpp"
 
 #include <cstring>
 #include <algorithm>
@@ -21,7 +22,6 @@ namespace duckdb {
 
 struct string_t {
 	friend struct StringComparisonOperators;
-	friend class StringSegment;
 
 public:
 	static constexpr idx_t PREFIX_BYTES = 4 * sizeof(char);
@@ -235,3 +235,12 @@ private:
 };
 
 } // namespace duckdb
+
+namespace std {
+template <>
+struct hash<duckdb::string_t> {
+	size_t operator()(const duckdb::string_t &val) const {
+		return Hash(val);
+	}
+};
+} // namespace std

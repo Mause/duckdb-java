@@ -24,7 +24,7 @@ class PreparedStatement {
 public:
 	//! Create a successfully prepared prepared statement object with the given name
 	DUCKDB_API PreparedStatement(shared_ptr<ClientContext> context, shared_ptr<PreparedStatementData> data,
-	                             string query, idx_t n_param, case_insensitive_map_t<idx_t> named_param_map);
+	                             string query, case_insensitive_map_t<idx_t> named_param_map);
 	//! Create a prepared statement that was not successfully prepared
 	DUCKDB_API explicit PreparedStatement(ErrorData error);
 
@@ -41,9 +41,7 @@ public:
 	bool success;
 	//! The error message (if success = false)
 	ErrorData error;
-	//! The amount of bound parameters
-	idx_t n_param;
-	//! The (optional) named parameters
+	//! The parameter mapping
 	case_insensitive_map_t<idx_t> named_param_map;
 
 public:
@@ -96,7 +94,7 @@ public:
 
 	template <class PAYLOAD>
 	static string ExcessValuesException(const case_insensitive_map_t<idx_t> &parameters,
-	                                    case_insensitive_map_t<PAYLOAD> &values) {
+	                                    const case_insensitive_map_t<PAYLOAD> &values) {
 		// Too many values
 		set<string> excess_set;
 		for (auto &pair : values) {
@@ -115,7 +113,7 @@ public:
 
 	template <class PAYLOAD>
 	static string MissingValuesException(const case_insensitive_map_t<idx_t> &parameters,
-	                                     case_insensitive_map_t<PAYLOAD> &values) {
+	                                     const case_insensitive_map_t<PAYLOAD> &values) {
 		// Missing values
 		set<string> missing_set;
 		for (auto &pair : parameters) {
@@ -133,7 +131,7 @@ public:
 	}
 
 	template <class PAYLOAD>
-	static void VerifyParameters(case_insensitive_map_t<PAYLOAD> &provided,
+	static void VerifyParameters(const case_insensitive_map_t<PAYLOAD> &provided,
 	                             const case_insensitive_map_t<idx_t> &expected) {
 		if (expected.size() == provided.size()) {
 			// Same amount of identifiers, if

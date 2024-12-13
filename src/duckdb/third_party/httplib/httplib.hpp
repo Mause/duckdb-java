@@ -1,5 +1,5 @@
 // taken from: https://github.com/yhirose/cpp-httplib/blob/v0.14.3/httplib.h
-// Note: some modifications are made to file
+// Note: some modifications are made to file (replace std::regex with RE2)
 
 //
 //  httplib.h
@@ -68,6 +68,10 @@
 
 #ifndef CPPHTTPLIB_REQUEST_URI_MAX_LENGTH
 #define CPPHTTPLIB_REQUEST_URI_MAX_LENGTH 8192
+#endif
+
+#ifndef CPPHTTPLIB_USE_POLL
+#define CPPHTTPLIB_USE_POLL
 #endif
 
 #ifndef CPPHTTPLIB_HEADER_MAX_LENGTH
@@ -272,6 +276,7 @@ using socket_t = int;
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
+#include <openssl/rand.h>
 
 #if defined(_WIN32) && defined(OPENSSL_USE_APPLINK)
 #include <openssl/applink.c>
@@ -2075,8 +2080,7 @@ namespace detail {
 
 std::string encode_query_param(const std::string &value);
 
-std::string decode_url(const std::string &s, bool convert_plus_to_space);
-
+std::string decode_url(const std::string &s, bool convert_plus_to_space, const std::set<char> &exclude = {});
 void read_file(const std::string &path, std::string &out);
 
 std::string trim_copy(const std::string &s);
@@ -2364,8 +2368,8 @@ inline std::string base64_encode(const std::string &in) {
   std::string out;
   out.reserve(in.size());
 
-  auto val = 0;
-  auto valb = -6;
+  unsigned int val = 0;
+  int valb = -6;
 
   for (auto c : in) {
     val = (val << 8) + static_cast<uint8_t>(c);
@@ -2464,7 +2468,7 @@ inline std::string encode_url(const std::string &s) {
   for (size_t i = 0; s[i]; i++) {
     switch (s[i]) {
     case ' ': result += "%20"; break;
-//    case '+': result += "%2B"; break;
+    case '+': result += "%2B"; break;
     case '\r': result += "%0D"; break;
     case '\n': result += "%0A"; break;
     case '\'': result += "%27"; break;
@@ -2490,7 +2494,8 @@ inline std::string encode_url(const std::string &s) {
 }
 
 inline std::string decode_url(const std::string &s,
-                              bool convert_plus_to_space) {
+                              bool convert_plus_to_space,
+                              const std::set<char> &exclude) {
   std::string result;
 
   for (size_t i = 0; i < s.size(); i++) {
@@ -2509,12 +2514,11 @@ inline std::string decode_url(const std::string &s,
       } else {
         auto val = 0;
         if (from_hex_to_i(s, i + 1, 2, val)) {
-          // 2 digits hex codes
-          if (static_cast<char>(val) == '+'){
-            // We don't decode +
-            result += "%2B";
+          const auto converted = static_cast<char>(val);
+          if (exclude.count(converted) == 0) {
+            result += converted;
           } else {
-            result += static_cast<char>(val);
+            result.append(s, i, 3);
           }
           i += 2; // '00'
         } else {
@@ -3422,7 +3426,7 @@ inline unsigned int str2tag(const std::string &s) {
 
 namespace udl {
 
-inline constexpr unsigned int operator"" _t(const char *s, size_t l) {
+inline constexpr unsigned int operator "" _t(const char *s, size_t l) {
   return str2tag_core(s, l, 0);
 }
 
@@ -3437,7 +3441,7 @@ find_content_type(const std::string &path,
   auto it = user_data.find(ext);
   if (it != user_data.end()) { return it->second; }
 
-  using udl::operator""_t;
+  using udl::operator "" _t;
 
   switch (str2tag(ext)) {
   default: return default_content_type;
@@ -3495,7 +3499,7 @@ find_content_type(const std::string &path,
 }
 
 inline bool can_compress_content_type(const std::string &content_type) {
-  using udl::operator""_t;
+  using udl::operator "" _t;
 
   auto tag = str2tag(content_type);
 
@@ -3789,7 +3793,7 @@ inline bool parse_header(const char *beg, const char *end, T fn) {
     if (!key_len) { return false; }
 
     auto key = std::string(beg, key_end);
-    auto val = compare_case_ignore(key, "Location")
+    auto val = compare_case_ignore(key, "Location") || compare_case_ignore(key, "Link")
                    ? std::string(p, end)
                    : decode_url(std::string(p, end), false);
     fn(std::move(key), std::move(val));
@@ -7105,9 +7109,9 @@ inline bool ClientImpl::redirect(Request &req, Response &res, Error &error) {
   if (next_scheme.empty()) { next_scheme = scheme; }
   if (next_host.empty()) { next_host = host_; }
   if (next_path.empty()) { next_path = "/"; }
-
-  auto path = detail::decode_url(next_path, true) + next_query;
-
+  
+  auto path = detail::decode_url(next_path, true, std::set<char> {'/'}) + next_query;
+	
   if (next_scheme == scheme && next_host == host_ && next_port == port_) {
     return detail::redirect(*this, req, res, path, location, error);
   } else {

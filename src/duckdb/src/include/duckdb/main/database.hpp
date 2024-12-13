@@ -12,6 +12,7 @@
 #include "duckdb/main/valid_checker.hpp"
 #include "duckdb/common/winapi.hpp"
 #include "duckdb/main/extension.hpp"
+#include "duckdb/main/capi/extension_api.hpp"
 #include "duckdb/main/extension_install_info.hpp"
 #include "duckdb/main/settings.hpp"
 
@@ -28,6 +29,7 @@ class ObjectCache;
 struct AttachInfo;
 struct AttachOptions;
 class DatabaseFileSystem;
+struct DatabaseCacheEntry;
 
 struct ExtensionInfo {
 	bool is_loaded;
@@ -57,6 +59,8 @@ public:
 	DUCKDB_API ValidChecker &GetValidChecker();
 	DUCKDB_API void SetExtensionLoaded(const string &extension_name, ExtensionInstallInfo &install_info);
 
+	DUCKDB_API const duckdb_ext_api_v0 GetExtensionAPIV0();
+
 	idx_t NumberOfThreads();
 
 	DUCKDB_API static DatabaseInstance &GetDatabase(ClientContext &context);
@@ -71,9 +75,11 @@ public:
 	                                                    const AttachOptions &options);
 
 	void AddExtensionInfo(const string &name, const ExtensionLoadedInfo &info);
+	void SetDatabaseCacheEntry(shared_ptr<DatabaseCacheEntry> entry);
 
 private:
 	void Initialize(const char *path, DBConfig *config);
+	void LoadExtensionSettings();
 	void CreateMainDatabase();
 
 	void Configure(DBConfig &config, const char *path);
@@ -87,6 +93,9 @@ private:
 	unordered_map<string, ExtensionInfo> loaded_extensions_info;
 	ValidChecker db_validity;
 	unique_ptr<DatabaseFileSystem> db_file_system;
+	shared_ptr<DatabaseCacheEntry> db_cache_entry;
+
+	duckdb_ext_api_v0 (*create_api_v0)();
 };
 
 //! The database object. This object holds the catalog and all the

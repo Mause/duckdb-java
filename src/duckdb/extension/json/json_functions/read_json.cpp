@@ -1,9 +1,9 @@
+#include "duckdb/common/helper.hpp"
 #include "duckdb/common/multi_file_reader.hpp"
 #include "json_functions.hpp"
 #include "json_scan.hpp"
 #include "json_structure.hpp"
 #include "json_transform.hpp"
-#include "duckdb/common/helper.hpp"
 
 namespace duckdb {
 
@@ -145,6 +145,9 @@ unique_ptr<FunctionData> ReadJSONBind(ClientContext &context, TableFunctionBindI
 	bind_data->Bind(context, input);
 
 	for (auto &kv : input.named_parameters) {
+		if (kv.second.IsNull()) {
+			throw BinderException("Cannot use NULL as function argument");
+		}
 		auto loption = StringUtil::Lower(kv.first);
 		if (kv.second.IsNull()) {
 			throw BinderException("read_json parameter \"%s\" cannot be NULL.", loption);
@@ -327,8 +330,8 @@ static void ReadJSONFunction(ClientContext &context, TableFunctionInput &data_p,
 
 	if (!gstate.names.empty()) {
 		vector<Vector *> result_vectors;
-		result_vectors.reserve(gstate.column_indices.size());
-		for (const auto &col_idx : gstate.column_indices) {
+		result_vectors.reserve(gstate.column_ids.size());
+		for (const auto &col_idx : gstate.column_ids) {
 			result_vectors.emplace_back(&output.data[col_idx]);
 		}
 
@@ -336,11 +339,12 @@ static void ReadJSONFunction(ClientContext &context, TableFunctionInput &data_p,
 		bool success;
 		if (gstate.bind_data.options.record_type == JSONRecordType::RECORDS) {
 			success = JSONTransform::TransformObject(values, lstate.GetAllocator(), count, gstate.names, result_vectors,
-			                                         lstate.transform_options);
+			                                         lstate.transform_options, gstate.column_indices,
+			                                         lstate.transform_options.error_unknown_key);
 		} else {
 			D_ASSERT(gstate.bind_data.options.record_type == JSONRecordType::VALUES);
 			success = JSONTransform::Transform(values, lstate.GetAllocator(), *result_vectors[0], count,
-			                                   lstate.transform_options);
+			                                   lstate.transform_options, gstate.column_indices[0]);
 		}
 
 		if (!success) {
