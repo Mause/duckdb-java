@@ -10,7 +10,7 @@ include(FetchContent)
 FetchContent_Declare(
   jnipp
   GIT_REPOSITORY https://github.com/mitchdowd/jnipp
-  GIT_TAG v1.0.0)
+  GIT_TAG cdd6293fca985993129f5ef5441709fc49ee507f)
 FetchContent_MakeAvailable(jnipp)
 
 cmake_minimum_required(VERSION 3.11.0)
