@@ -82,9 +82,11 @@ target_compile_options(duckdb_java PRIVATE -fexceptions)
 target_link_libraries(duckdb_java duckdb-native )
 target_link_libraries(duckdb_java ${DUCKDB_SYSTEM_LIBS})
 
-string(JOIN "_" LIB_SUFFIX ".so" ${OS_NAME} ${OS_ARCH})
-set_target_properties(duckdb_java PROPERTIES SUFFIX ${LIB_SUFFIX})
-set_target_properties(duckdb_java PROPERTIES PREFIX "lib")
+if(NOT ANDROID)
+  string(JOIN "_" LIB_SUFFIX ".so" ${OS_NAME} ${OS_ARCH})
+  set_target_properties(duckdb_java PROPERTIES SUFFIX ${LIB_SUFFIX})
+  set_target_properties(duckdb_java PROPERTIES PREFIX "lib")
+endif()
 
 add_custom_command(
   OUTPUT dummy_jdbc_target
