@@ -13,7 +13,6 @@ env:
 jobs:
   format_check:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
         with:
@@ -21,6 +20,26 @@ jobs:
           ref: ${{ inputs.git_ref }}
 
       - run: make format-check
+
+  mvn:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/pypa/manylinux2014_x86_64
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.git_ref }}
+
+      - uses: ./.github/actions/manylinux_2014_setup
+        with:
+          jdk: 1
+          ninja-build: 1
+      - run: ./mvnw site
+        env:
+          JAVA_HOME: /usr/lib/jvm/jdk-17-oracle-x64/
+          JAVA_INCLUDE_PATH: /usr/lib/jvm/jdk-17-oracle-x64/include/
 
   java-linux-amd64:
     name: Java Linux (amd64)

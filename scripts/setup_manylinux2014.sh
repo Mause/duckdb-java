@@ -56,7 +56,9 @@ install_deps() {
     ln -fs /usr/local/bin/python3.9 /usr/local/bin/python3
 
   elif [ "$1" = "jdk" ]; then
-    yum install -y java-11-openjdk-devel maven
+    yum install -y wget
+    wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.rpm
+    yum localinstall -y jdk-17_linux-x64_bin.rpm
 
   elif [ "$1" = "ssh" ]; then
     yum install -y openssh-clients
