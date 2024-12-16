@@ -9,6 +9,7 @@ on:
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
   OVERRIDE_GIT_DESCRIBE: ${{ inputs.override_git_describe }}
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   format_check:
@@ -35,6 +36,8 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.git_ref }}
+        env:
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
       - uses: ./.github/actions/manylinux_2014_setup
         with:
